@@ -169,7 +169,7 @@ def main():
         elapsed_time = end_time - start_time
         print(f"Data loaded in : {elapsed_time} seconds")
 
-        inp_size = train_data.embeddings.shape[1]
+        inp_size = 300
         # Train and evaluate DAN
         start_time = time.time()
         print('DAN with Pretraining:')

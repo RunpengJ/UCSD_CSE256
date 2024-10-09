@@ -1,6 +1,7 @@
 # models.py
 
 import torch
+import numpy as np
 from torch import nn
 import torch.nn.functional as F
 from sklearn.feature_extraction.text import CountVectorizer
@@ -20,7 +21,7 @@ class SentimentDatasetDAN(Dataset):
 
         self.labels = [ex.label for ex in self.examples]
 
-        self.embeddings = torch.tensor(self.sentences, dtype=torch.float32)
+        self.embeddings = torch.tensor(np.array(self.sentences), dtype=torch.float32)
         self.labels = torch.tensor(self.labels, dtype=torch.long)
 
     def __len__(self):
