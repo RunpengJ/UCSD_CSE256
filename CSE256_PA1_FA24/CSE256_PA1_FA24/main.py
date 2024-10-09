@@ -88,21 +88,20 @@ def main():
     # Parse the command-line arguments
     args = parser.parse_args()
 
-    # Load dataset
-    start_time = time.time()
-
-    train_data = SentimentDatasetBOW("data/train.txt")
-    dev_data = SentimentDatasetBOW("data/dev.txt")
-    train_loader = DataLoader(train_data, batch_size=16, shuffle=True)
-    test_loader = DataLoader(dev_data, batch_size=16, shuffle=False)
-
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print(f"Data loaded in : {elapsed_time} seconds")
-
-
     # Check if the model type is "BOW"
     if args.model == "BOW":
+        # Load dataset
+        start_time = time.time()
+
+        train_data = SentimentDatasetBOW("data/train.txt")
+        dev_data = SentimentDatasetBOW("data/dev.txt")
+        train_loader = DataLoader(train_data, batch_size=16, shuffle=True)
+        test_loader = DataLoader(dev_data, batch_size=16, shuffle=False)
+
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print(f"Data loaded in : {elapsed_time} seconds")
+
         # Train and evaluate NN2
         start_time = time.time()
         print('\n2 layers:')
