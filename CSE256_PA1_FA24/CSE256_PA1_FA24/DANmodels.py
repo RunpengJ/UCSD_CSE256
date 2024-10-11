@@ -13,9 +13,10 @@ class SentimentDatasetDAN(Dataset):
         self.examples = read_sentiment_examples(infile)
         self.word_embed = word_embed
         self.labels = torch.tensor([ex.label for ex in self.examples], dtype=torch.long)
-        self.indices = [torch.tensor([self.word_embed.word_indexer.index_of(w) if self.word_embed.word_indexer.index_of(w) != -1 else self.word_embed.word_indexer.index_of("UNK")
+        self.indices = [torch.tensor([self.word_embed.word_indexer.index_of(w) if self.word_embed.word_indexer.index_of(w) != -1 
+                                      else self.word_embed.word_indexer.index_of("UNK")
                                       for w in ex.words], dtype=torch.long) for ex in self.examples]
-        
+
     def __len__(self):
         return len(self.examples)
     
@@ -29,12 +30,16 @@ class SentimentDatasetDAN(Dataset):
         return indices_padded, labels
         
 
-
 class DAN(nn.Module):
-    def __init__(self, embed_size, hidden_size, word_embed):
+    def __init__(self, embed_size, hidden_size, vocab_size=None, word_embed=None):
         super().__init__()
         # Using pretrained initialization
-        self.embeddings = word_embed.get_initialized_embedding_layer()
+        
+        if word_embed:
+            self.embeddings = word_embed.get_initialized_embedding_layer()
+        else:
+            # Initialization without pretrained
+            self.embeddings = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
 
         self.fc1 = nn.Linear(embed_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)

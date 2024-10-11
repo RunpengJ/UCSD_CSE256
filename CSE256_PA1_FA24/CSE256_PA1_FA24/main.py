@@ -147,7 +147,7 @@ def main():
         # Start the timer to measure load time
         start_time = time.time()
 
-        # Load word embeddings
+        # Load pretrained embeddings
         word_embeddings = read_word_embeddings("data/glove.6B.300d-relativized.txt")
 
         # Load training and development datasets
@@ -158,16 +158,26 @@ def main():
         train_loader = DataLoader(train_data, batch_size=16, shuffle=True, collate_fn=train_data.collate_fn)
         test_loader = DataLoader(dev_data, batch_size=16, shuffle=False, collate_fn=dev_data.collate_fn)
 
-        embed_size = 300
-        # Train and evaluate DAN
+        print(f"Data loaded in : {time.time() - start_time} seconds")
+
+        # Train and evaluate pretrained DAN
         start_time = time.time()
-        print('DAN with Pretraining:')
-        DAN_train_accuracy, DAN_test_accuracy = experiment(DAN(embed_size=embed_size, hidden_size=100, word_embed=word_embeddings), train_loader, test_loader)
+        print("Pretrained DAN :")
+        Pretrain_DAN_train_accuracy, Pretrain_DAN_test_accuracy = experiment(DAN(embed_size=300, hidden_size=100, word_embed=word_embeddings), train_loader, test_loader)
+        print(f"Finished training in : {time.time() - start_time} seconds")
+
+        ###### Randomly initialized embeddings ######
+        print("DAN")
+        start_time = time.time()
+        DAN_train_accuracy, DAN_test_accuracy = experiment(DAN(embed_size=300, hidden_size=100, vocab_size=word_embeddings.word_indexer.__len__()), train_loader, test_loader)
+        print(f"Finished training in : {time.time() - start_time} seconds")
 
         # Plot the training and testing accuracy
         plt.figure(figsize=(8, 6))
-        plt.plot(DAN_train_accuracy, label='Training')
-        plt.plot(DAN_test_accuracy, label='Testing')
+        plt.plot(Pretrain_DAN_train_accuracy, label='Pretrained DAN Training Acc')
+        plt.plot(Pretrain_DAN_test_accuracy, label='Pretrained DAN Testing Acc')
+        plt.plot(DAN_train_accuracy, label='DAN Training Acc')
+        plt.plot(DAN_test_accuracy, label='DAN Testing Acc')
         plt.xlabel('Epochs')
         plt.ylabel('Accuracy')
         plt.title('Accuracy for training and testing')
