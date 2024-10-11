@@ -4,7 +4,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from sklearn.feature_extraction.text import CountVectorizer
-from sentiment_data import read_sentiment_examples
+from sentiment_data import read_sentiment_examples, read_word_embeddings
 from torch.utils.data import Dataset, DataLoader
 import time
 import argparse
@@ -21,7 +21,8 @@ def train_epoch(data_loader, model, loss_fn, optimizer):
     model.train()
     train_loss, correct = 0, 0
     for batch, (X, y) in enumerate(data_loader):
-        X = X.float()
+        if not isinstance(model, DAN):
+            X = X.float()
 
         # Compute prediction error
         pred = model(X)
@@ -47,7 +48,8 @@ def eval_epoch(data_loader, model, loss_fn, optimizer):
     eval_loss = 0
     correct = 0
     for batch, (X, y) in enumerate(data_loader):
-        X = X.float()
+        if not isinstance(model, DAN):
+            X = X.float()
 
         # Compute prediction error
         pred = model(X)
@@ -85,27 +87,12 @@ def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Run model training based on specified model type')
     parser.add_argument('--model', type=str, required=True, help='Model type to train (e.g., BOW)')
-
     # Parse the command-line arguments
     args = parser.parse_args()
 
-    # # Load dataset
-    # start_time = time.time()
-
-    # train_data = SentimentDatasetBOW("data/train.txt")
-    # dev_data = SentimentDatasetBOW("data/dev.txt")
-    # train_loader = DataLoader(train_data, batch_size=16, shuffle=True)
-    # test_loader = DataLoader(dev_data, batch_size=16, shuffle=False)
-
-    # end_time = time.time()
-    # elapsed_time = end_time - start_time
-    # print(f"Data loaded in : {elapsed_time} seconds")
-
-    # Check if the model type is "BOW"
     if args.model == "BOW":
         # Load dataset
         start_time = time.time()
-
         train_data = SentimentDatasetBOW("data/train.txt")
         dev_data = SentimentDatasetBOW("data/dev.txt")
         train_loader = DataLoader(train_data, batch_size=16, shuffle=True)
@@ -157,23 +144,25 @@ def main():
         # plt.show()
 
     elif args.model == "DAN":
-        # Load dataset
+        # Start the timer to measure load time
         start_time = time.time()
 
-        train_data = SentimentDatasetDAN("data/train.txt", "data/glove.6B.300d-relativized.txt")
-        dev_data = SentimentDatasetDAN("data/dev.txt", "data/glove.6B.300d-relativized.txt")
-        train_loader = DataLoader(train_data, batch_size=16, shuffle=True)
-        test_loader = DataLoader(dev_data, batch_size=16, shuffle=False)
+        # Load word embeddings
+        word_embeddings = read_word_embeddings("data/glove.6B.300d-relativized.txt")
 
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        print(f"Data loaded in : {elapsed_time} seconds")
+        # Load training and development datasets
+        train_data = SentimentDatasetDAN("data/train.txt", word_embeddings)
+        dev_data = SentimentDatasetDAN("data/dev.txt", word_embeddings)
 
-        inp_size = 300
+        # Create data loaders with the custom collate function
+        train_loader = DataLoader(train_data, batch_size=16, shuffle=True, collate_fn=train_data.collate_fn)
+        test_loader = DataLoader(dev_data, batch_size=16, shuffle=False, collate_fn=dev_data.collate_fn)
+
+        embed_size = 300
         # Train and evaluate DAN
         start_time = time.time()
         print('DAN with Pretraining:')
-        DAN_train_accuracy, DAN_test_accuracy = experiment(DAN(input_size=inp_size, hidden_size=100), train_loader, test_loader)
+        DAN_train_accuracy, DAN_test_accuracy = experiment(DAN(embed_size=embed_size, hidden_size=100, word_embed=word_embeddings), train_loader, test_loader)
 
         # Plot the training and testing accuracy
         plt.figure(figsize=(8, 6))

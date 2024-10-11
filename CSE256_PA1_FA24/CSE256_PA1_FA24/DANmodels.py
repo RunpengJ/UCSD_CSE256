@@ -1,46 +1,52 @@
 # models.py
 
 import torch
-import numpy as np
 from torch import nn
 import torch.nn.functional as F
-from sklearn.feature_extraction.text import CountVectorizer
-from sentiment_data import read_sentiment_examples, read_word_embeddings, WordEmbeddings
+from sentiment_data import read_sentiment_examples
 from torch.utils.data import Dataset
+from torch.nn.utils.rnn import pad_sequence
+from utils import *
 
 class SentimentDatasetDAN(Dataset):
-    def __init__(self, infile, embed_file):
+    def __init__(self, infile, word_embed):
         self.examples = read_sentiment_examples(infile)
-        self.word_embeddings = read_word_embeddings(embed_file)
-
-        self.sentences = []
-        # append averaged embedding
-        for ex in self.examples:
-            sentence = [self.word_embeddings.get_embedding(w) for w in ex.words]
-            self.sentences.append(sum(sentence) / len(sentence))
-
-        self.labels = [ex.label for ex in self.examples]
-
-        self.embeddings = torch.tensor(np.array(self.sentences), dtype=torch.float32)
-        self.labels = torch.tensor(self.labels, dtype=torch.long)
-
+        self.word_embed = word_embed
+        self.labels = torch.tensor([ex.label for ex in self.examples], dtype=torch.long)
+        self.indices = [torch.tensor([self.word_embed.word_indexer.index_of(w) if self.word_embed.word_indexer.index_of(w) != -1 else self.word_embed.word_indexer.index_of("UNK")
+                                      for w in ex.words], dtype=torch.long) for ex in self.examples]
+        
     def __len__(self):
         return len(self.examples)
     
     def __getitem__(self, idx):
-        return self.embeddings[idx], self.labels[idx]
+        return self.indices[idx], self.labels[idx]
+    
+    def collate_fn(self, batch):
+        indices, labels = zip(*batch)
+        indices_padded = pad_sequence(indices, batch_first=True, padding_value=0)  # PAD index assumed to be 0
+        labels = torch.tensor(labels, dtype=torch.long)
+        return indices_padded, labels
+        
 
 
 class DAN(nn.Module):
-    def __init__(self, input_size, hidden_size):
+    def __init__(self, embed_size, hidden_size, word_embed):
         super().__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, 2)
+        # Using pretrained initialization
+        self.embeddings = word_embed.get_initialized_embedding_layer()
+
+        self.fc1 = nn.Linear(embed_size, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.fc3 = nn.Linear(hidden_size, 2)  # Output size for binary classification
         self.log_softmax = nn.LogSoftmax(dim=1)
 
     def forward(self, x):
+        x = self.embeddings(x)
+        x = x.mean(dim=1)  # Average embeddings to get a fixed-size vector
         x = F.relu(self.fc1(x))
-        x = self.fc2(x)
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)  # Remove ReLU here before log softmax
         x = self.log_softmax(x)
         return x
     
