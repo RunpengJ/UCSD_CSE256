@@ -163,7 +163,7 @@ def main():
         # Train and evaluate pretrained DAN
         start_time = time.time()
         print("Pretrained DAN :")
-        Pretrain_DAN_train_accuracy, Pretrain_DAN_test_accuracy = experiment(DAN(embed_size=300, hidden_size=100, word_embed=word_embeddings), train_loader, test_loader)
+        Pretrain_DAN_train_accuracy, Pretrain_DAN_test_accuracy = experiment(DAN(embed_size=300, hidden_size=100, word_embed=word_embeddings, frozen=False), train_loader, test_loader)
         print(f"Finished training in : {time.time() - start_time} seconds")
 
         ###### Randomly initialized embeddings ######

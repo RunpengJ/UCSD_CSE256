@@ -31,12 +31,12 @@ class SentimentDatasetDAN(Dataset):
         
 
 class DAN(nn.Module):
-    def __init__(self, embed_size, hidden_size, vocab_size=None, word_embed=None):
+    def __init__(self, embed_size, hidden_size, vocab_size=None, word_embed=None, frozen=True):
         super().__init__()
         # Using pretrained initialization
         
         if word_embed:
-            self.embeddings = word_embed.get_initialized_embedding_layer()
+            self.embeddings = word_embed.get_initialized_embedding_layer(frozen=frozen)
         else:
             # Initialization without pretrained
             self.embeddings = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
