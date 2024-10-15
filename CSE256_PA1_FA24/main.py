@@ -69,17 +69,22 @@ def experiment(model, train_loader, test_loader):
 
     all_train_accuracy = []
     all_test_accuracy = []
+    all_train_loss = []
+    all_test_loss = []
     for epoch in range(100):
         train_accuracy, train_loss = train_epoch(train_loader, model, loss_fn, optimizer)
         all_train_accuracy.append(train_accuracy)
+        all_train_loss.append(train_loss)
+
 
         test_accuracy, test_loss = eval_epoch(test_loader, model, loss_fn, optimizer)
         all_test_accuracy.append(test_accuracy)
+        all_test_loss.append(test_loss)
 
         if epoch % 10 == 9:
             print(f'Epoch #{epoch + 1}: train accuracy {train_accuracy:.3f}, dev accuracy {test_accuracy:.3f}')
     
-    return all_train_accuracy, all_test_accuracy
+    return all_train_accuracy, all_test_accuracy, all_train_loss, all_test_loss
 
 
 def main():
@@ -105,11 +110,11 @@ def main():
         # Train and evaluate NN2
         start_time = time.time()
         print('\n2 layers:')
-        nn2_train_accuracy, nn2_test_accuracy = experiment(NN2BOW(input_size=512, hidden_size=100), train_loader, test_loader)
+        nn2_train_accuracy, nn2_test_accuracy, nn2_train_loss, nn2_test_loss = experiment(NN2BOW(input_size=512, hidden_size=100), train_loader, test_loader)
 
         # Train and evaluate NN3
         print('\n3 layers:')
-        nn3_train_accuracy, nn3_test_accuracy = experiment(NN3BOW(input_size=512, hidden_size=100), train_loader, test_loader)
+        nn3_train_accuracy, nn3_test_accuracy, nn3_train_loss, nn3_test_loss = experiment(NN3BOW(input_size=512, hidden_size=100), train_loader, test_loader)
 
         # Plot the training accuracy
         plt.figure(figsize=(8, 6))
@@ -163,19 +168,19 @@ def main():
         # Train and evaluate pretrained DAN
         start_time = time.time()
         print("Pretrained DAN :")
-        Pretrain_DAN_train_accuracy, Pretrain_DAN_test_accuracy = experiment(DAN(embed_size=300, hidden_size=100, word_embed=word_embeddings, frozen=False), train_loader, test_loader)
+        pre_DAN_train_accuracy, pre_DAN_test_accuracy, pre_DAN_train_loss, pre_DAN_test_loss = experiment(DAN(embed_size=300, hidden_size=100, word_embed=word_embeddings, frozen=True), train_loader, test_loader)
         print(f"Finished training in : {time.time() - start_time} seconds")
 
         ###### Randomly initialized embeddings ######
         print("DAN")
         start_time = time.time()
-        DAN_train_accuracy, DAN_test_accuracy = experiment(DAN(embed_size=300, hidden_size=100, vocab_size=word_embeddings.word_indexer.__len__()), train_loader, test_loader)
+        DAN_train_accuracy, DAN_test_accuracy, rand_DAN_train_loss, rand_DAN_test_loss = experiment(DAN(embed_size=300, hidden_size=100, vocab_size=word_embeddings.word_indexer.__len__()), train_loader, test_loader)
         print(f"Finished training in : {time.time() - start_time} seconds")
 
         # Plot the training and testing accuracy
         plt.figure(figsize=(8, 6))
-        plt.plot(Pretrain_DAN_train_accuracy, label='Pretrained DAN Training Acc')
-        plt.plot(Pretrain_DAN_test_accuracy, label='Pretrained DAN Testing Acc')
+        plt.plot(pre_DAN_train_accuracy, label='Pretrained DAN Training Acc')
+        plt.plot(pre_DAN_test_accuracy, label='Pretrained DAN Testing Acc')
         plt.plot(DAN_train_accuracy, label='DAN Training Acc')
         plt.plot(DAN_test_accuracy, label='DAN Testing Acc')
         plt.xlabel('Epochs')
@@ -184,11 +189,27 @@ def main():
         plt.legend()
         plt.grid()
 
-        # Save the testing accuracy figure
+        # Save the accuracy figure
         dan_accuracy_file = 'dan_accuracy.png'
         plt.savefig(dan_accuracy_file)
         print(f"DAN accuracy plot saved as {dan_accuracy_file}\n\n")
 
+        # Plot the training and testing loss
+        plt.figure(figsize=(8, 6))
+        plt.plot(pre_DAN_train_loss, label='Pretrained DAN Training Loss')
+        plt.plot(pre_DAN_test_loss, label='Pretrained DAN Testing Loss')
+        plt.plot(rand_DAN_train_loss, label='DAN Training Loss')
+        plt.plot(rand_DAN_test_loss, label='DAN Testing Loss')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.title('Loss for training and testing')
+        plt.legend()
+        plt.grid()
+
+        # Save the loss figure
+        dan_loss_file = 'dan_loss.png'
+        plt.savefig(dan_loss_file)
+        print(f"DAN loss plot saved as {dan_loss_file}\n\n")
 
 if __name__ == "__main__":
     main()

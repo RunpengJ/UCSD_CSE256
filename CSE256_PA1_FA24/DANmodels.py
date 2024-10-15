@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from sentiment_data import read_sentiment_examples
 from torch.utils.data import Dataset
 from torch.nn.utils.rnn import pad_sequence
+import torch.nn.init as init
 from utils import *
 
 class SentimentDatasetDAN(Dataset):
@@ -16,7 +17,7 @@ class SentimentDatasetDAN(Dataset):
         self.indices = [torch.tensor([self.word_embed.word_indexer.index_of(w) if self.word_embed.word_indexer.index_of(w) != -1 
                                       else self.word_embed.word_indexer.index_of("UNK")
                                       for w in ex.words], dtype=torch.long) for ex in self.examples]
-
+        
     def __len__(self):
         return len(self.examples)
     
@@ -40,6 +41,8 @@ class DAN(nn.Module):
         else:
             # Initialization without pretrained
             self.embeddings = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
+            init.kaiming_uniform_(self.embeddings.weight)
+
 
         self.fc1 = nn.Linear(embed_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
@@ -48,6 +51,7 @@ class DAN(nn.Module):
 
     def forward(self, x):
         x = self.embeddings(x)
+        # x = F.relu(x)
         x = x.mean(dim=1)  # Average embeddings to get a fixed-size vector
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
