@@ -7,29 +7,36 @@ import re, collections
 import time
 
 class Byte_Pair_Encoding(Dataset):
-    def __init__(self, infile, num_of_vocab):
-        print("###### Loading dataset ... #####")
+    def __init__(self, infile, num_of_vocab, indexer=None, merge_ops=None):
         self.examples = read_sentiment_examples(infile)
-        self.indexer = Indexer()
-        self.indexer.add_and_get_index('</w>')
-
-        print("###### Building vocabulary ... ######")
-        self.vocab = self.build_vocab()
-        print("##### Computing merge operations #####")
-        self.merge_ops = self.compute_merge_ops(num_of_vocab)
-        
-        print("###### Start encoding ... ###### ")
-        self.encode() 
-
         self.labels = torch.tensor([ex.label for ex in self.examples], dtype=torch.long)
+
+        if indexer is None:
+            self.indexer = Indexer()
+            self.indexer.add_and_get_index("PAD")
+            self.indexer.add_and_get_index("UNK")
+            self.indexer.add_and_get_index("</w>")
+            self.vocab = self.build_vocab()
+
+            print("##### Computing merge operations #####")
+            self.merge_ops = self.compute_merge_ops(num_of_vocab)
+            
+            print("###### Start encoding ... ###### ")
+            self.encode() 
+
+        else:
+            self.indexer = indexer
+            self.merge_ops = merge_ops
+            self.encode()
 
     def build_vocab(self):
         vocab = collections.defaultdict(int)
         for ex in self.examples:
             for w in ex.words:
-                word = ' '.join(list(w)) + " </w>"
+                chars = list(w) + ['</w>']
+                word = ' '.join(chars)
                 vocab[word] += 1
-                for c in list(w):
+                for c in chars[:-1]:
                     self.indexer.add_and_get_index(c)
         return vocab
     
@@ -43,14 +50,19 @@ class Byte_Pair_Encoding(Dataset):
             self.vocab = self.merge_vocab(best, self.vocab)
             merge_ops.append(best)
             self.indexer.add_and_get_index(''.join(best))
+
+            if self.indexer.__len__() % 1000 == 0:
+                print(f'Vocabsize: {self.indexer.__len__()}')
+
         return merge_ops
 
     def get_stats(self, vocab):
-        pairs = collections.defaultdict(int)
+        pairs = collections.Counter()
         for word, freq in vocab.items():
             symbols = word.split()
-            for i in range(len(symbols)-1):
-                pairs[symbols[i], symbols[i+1]] += freq
+            pairs.update((symbols[i], symbols[i + 1]) for i in range(len(symbols) - 1))
+            # for i in range(len(symbols)-1):
+            #     pairs[symbols[i], symbols[i+1]] += freq
         return pairs
 
     def merge_vocab(self, pair, v_in):
@@ -68,7 +80,7 @@ class Byte_Pair_Encoding(Dataset):
         for ex in self.examples:
             tokens = [c for w in ex.words for c in list(w) + ["</w>"]]
             merged = self.merge_word(tokens)
-            self.indices.append(torch.tensor([self.indexer.index_of(w) for w in merged]))
+            self.indices.append(torch.tensor([self.indexer.index_of(w) if self.indexer.contains(w) else self.indexer.index_of("UNK") for w in merged], dtype=torch.long))
 
     def merge_word(self, tokens):
         sentence = ' '.join(tokens)
@@ -84,9 +96,14 @@ class Byte_Pair_Encoding(Dataset):
     def __getitem__(self, idx):
         return self.indices[idx], self.labels[idx]
     
+    # def collate_fn(self, batch):
+    #     indices, labels = zip(*batch)
+    #     indices_padded = pad_sequence(indices, batch_first=True, padding_value=0)  # PAD index assumed to be 0
+    #     labels = torch.tensor(labels, dtype=torch.long)
+    #     return indices_padded, labels
+
     def collate_fn(self, batch):
         indices, labels = zip(*batch)
-        indices_padded = pad_sequence(indices, batch_first=True, padding_value=0)  # PAD index assumed to be 0
-        labels = torch.tensor(labels, dtype=torch.long)
-        return indices_padded, labels
+        indices_padded = pad_sequence(indices, batch_first=True, padding_value=self.indexer.index_of('PAD'))  # Use PAD index
+        return indices_padded, torch.stack(labels)
 

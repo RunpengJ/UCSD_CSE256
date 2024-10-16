@@ -43,13 +43,19 @@ class DAN(nn.Module):
             self.embeddings = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
             init.kaiming_uniform_(self.embeddings.weight)
 
-
         self.fc1 = nn.Linear(embed_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
         self.fc3 = nn.Linear(hidden_size, 2)  # Output size for binary classification
         self.log_softmax = nn.LogSoftmax(dim=1)
 
     def forward(self, x):
+        max_index = self.embeddings.weight.size(0)  # Size of embedding matrix
+        if torch.max(x) >= max_index:
+            print(f"Error: Index {torch.max(x)} is out of range for embedding size {max_index}")
+
+        if torch.min(x) < 0:
+            print(f"Error: Index {torch.min(x)} is smaller than 0")
+        
         x = self.embeddings(x)
         # x = F.relu(x)
         x = x.mean(dim=1)  # Average embeddings to get a fixed-size vector

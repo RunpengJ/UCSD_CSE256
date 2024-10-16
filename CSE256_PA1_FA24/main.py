@@ -128,7 +128,7 @@ def main():
         plt.grid()
 
         # Save the training accuracy figure
-        training_accuracy_file = 'train_accuracy.png'
+        training_accuracy_file = 'results/bow_train_accuracy.png'
         plt.savefig(training_accuracy_file)
         print(f"\n\nTraining accuracy plot saved as {training_accuracy_file}")
 
@@ -143,7 +143,7 @@ def main():
         plt.grid()
 
         # Save the testing accuracy figure
-        testing_accuracy_file = 'dev_accuracy.png'
+        testing_accuracy_file = 'results/bow_dev_accuracy.png'
         plt.savefig(testing_accuracy_file)
         print(f"Dev accuracy plot saved as {testing_accuracy_file}\n\n")
 
@@ -169,10 +169,10 @@ def main():
         # Train and evaluate pretrained DAN
         start_time = time.time()
         print("Pretrained DAN :")
-        pre_DAN_train_accuracy, pre_DAN_test_accuracy, pre_DAN_train_loss, pre_DAN_test_loss = experiment(DAN(embed_size=300, hidden_size=100, word_embed=word_embeddings, frozen=True), train_loader, test_loader)
+        pre_DAN_train_accuracy, pre_DAN_test_accuracy, pre_DAN_train_loss, pre_DAN_test_loss = experiment(DAN(embed_size=300, hidden_size=100, word_embed=word_embeddings, frozen=False), train_loader, test_loader)
         print(f"Finished training in : {time.time() - start_time} seconds")
 
-        ###### Randomly initialized embeddings ######
+        # Randomly initialized embeddings 
         print("DAN")
         start_time = time.time()
         DAN_train_accuracy, DAN_test_accuracy, rand_DAN_train_loss, rand_DAN_test_loss = experiment(DAN(embed_size=300, hidden_size=100, vocab_size=word_embeddings.word_indexer.__len__()), train_loader, test_loader)
@@ -180,10 +180,10 @@ def main():
 
         # Plot the training and testing accuracy
         plt.figure(figsize=(8, 6))
-        plt.plot(pre_DAN_train_accuracy, label='Pretrained DAN Training Acc')
-        plt.plot(pre_DAN_test_accuracy, label='Pretrained DAN Testing Acc')
-        plt.plot(DAN_train_accuracy, label='DAN Training Acc')
-        plt.plot(DAN_test_accuracy, label='DAN Testing Acc')
+        plt.plot(pre_DAN_train_accuracy, label='Pretrained DAN Training')
+        plt.plot(pre_DAN_test_accuracy, label='Pretrained DAN Testing')
+        plt.plot(DAN_train_accuracy, label='DAN Training')
+        plt.plot(DAN_test_accuracy, label='DAN Testing')
         plt.xlabel('Epochs')
         plt.ylabel('Accuracy')
         plt.title('Accuracy for training and testing')
@@ -191,16 +191,16 @@ def main():
         plt.grid()
 
         # Save the accuracy figure
-        dan_accuracy_file = 'dan_accuracy.png'
+        dan_accuracy_file = 'results/dan_accuracy.png'
         plt.savefig(dan_accuracy_file)
-        print(f"DAN accuracy plot saved as {dan_accuracy_file}\n\n")
+        print(f"Accuracy plot saved as {dan_accuracy_file}\n\n")
 
         # Plot the training and testing loss
         plt.figure(figsize=(8, 6))
-        plt.plot(pre_DAN_train_loss, label='Pretrained DAN Training Loss')
-        plt.plot(pre_DAN_test_loss, label='Pretrained DAN Testing Loss')
-        plt.plot(rand_DAN_train_loss, label='DAN Training Loss')
-        plt.plot(rand_DAN_test_loss, label='DAN Testing Loss')
+        plt.plot(pre_DAN_train_loss, label='Pretrained DAN Training')
+        plt.plot(pre_DAN_test_loss, label='Pretrained DAN Testing')
+        plt.plot(rand_DAN_train_loss, label='DAN Training')
+        plt.plot(rand_DAN_test_loss, label='DAN Testing')
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
         plt.title('Loss for training and testing')
@@ -208,18 +208,57 @@ def main():
         plt.grid()
 
         # Save the loss figure
-        dan_loss_file = 'dan_loss.png'
+        dan_loss_file = 'results/dan_loss.png'
         plt.savefig(dan_loss_file)
-        print(f"DAN loss plot saved as {dan_loss_file}\n\n")
+        print(f"Loss plot saved as {dan_loss_file}\n\n")
 
-    elif args.model == "BPE":
-        k = 500
+    elif args.model == "SUBWORDDAN":
+        K = 10000
 
+        print('##### Loading dataset #####')
         start_time = time.time()
-        print('Starting BPE')
-        bpe = Byte_Pair_Encoding("data/train.txt", k)
-        print(f"Finish BPE in {time.time() - start_time} seconds")
+        train_data = Byte_Pair_Encoding("data/train.txt", K)
+        test_data = Byte_Pair_Encoding("data/dev.txt", K, indexer=train_data.indexer, merge_ops=train_data.merge_ops)
+        print(f"##### Finish BPE in {time.time() - start_time} secounds ##### ")
         
+        train_loader = DataLoader(train_data, batch_size=16, shuffle=True, collate_fn=train_data.collate_fn)
+        test_loader = DataLoader(test_data, batch_size=16, shuffle=True, collate_fn=test_data.collate_fn)
+        
+        # Train model
+        print("##### Training SUBWORDDAN #####")
+        start_time = time.time()
+        subword_DAN_train_accuracy, subword_DAN_test_accuracy, subword_DAN_train_loss, subword_DAN_test_loss = experiment(DAN(embed_size=300, hidden_size=100, vocab_size=K), train_loader, test_loader)
+        print(f"Finished training in : {time.time() - start_time} seconds")
+
+        # Plot the training and testing accuracy
+        plt.figure(figsize=(8, 6))
+        plt.plot(subword_DAN_train_accuracy, label='Training')
+        plt.plot(subword_DAN_test_accuracy, label='Testing')
+        plt.xlabel('Epochs')
+        plt.ylabel('Accuracy')
+        plt.title('Accuracy for training and testing')
+        plt.legend()
+        plt.grid()
+
+        # Save the accuracy figure
+        subworddan_accuracy_file = 'results/subworddan_accuracy.png'
+        plt.savefig(subworddan_accuracy_file)
+        print(f"Subword DAN accuracy plot saved as {subworddan_accuracy_file}\n\n")
+
+        # Plot the training and testing loss
+        plt.figure(figsize=(8, 6))
+        plt.plot(subword_DAN_train_loss, label='Training')
+        plt.plot(subword_DAN_test_loss, label='Testing')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.title('Loss for training and testing')
+        plt.legend()
+        plt.grid()
+
+        # Save the accuracy figure
+        subworddan_loss_file = 'results/subworddan_loss.png'
+        plt.savefig(subworddan_loss_file)
+        print(f"Subword DAN loss plot saved as {subworddan_loss_file}\n\n")
 
 
 if __name__ == "__main__":
