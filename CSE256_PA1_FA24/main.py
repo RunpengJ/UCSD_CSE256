@@ -102,7 +102,7 @@ def main():
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device}")
+    print(f"Using device: {device}")
 
     if args.model == "BOW":
         # Load dataset
@@ -185,7 +185,7 @@ def main():
         print("DAN")
         start_time = time.time()
         rand_init_train_accuracy, rand_init_test_accuracy, rand_init_train_loss, rand_init_test_loss = experiment(
-            DAN(embed_size=50, hidden_size=100, vocab_size=word_embeddings.word_indexer.__len__()), train_loader, test_loader, device)
+            DAN(embed_size=200, hidden_size=70, vocab_size=word_embeddings.word_indexer.__len__()), train_loader, test_loader, device)
         print(f"Finished training in : {time.time() - start_time} seconds")
 
         # Plot the accuracy

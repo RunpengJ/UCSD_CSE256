@@ -14,9 +14,10 @@ class SentimentDatasetDAN(Dataset):
         self.examples = read_sentiment_examples(infile)
         self.word_embed = word_embed
         self.labels = torch.tensor([ex.label for ex in self.examples], dtype=torch.long)
-        self.indices = [torch.tensor([self.word_embed.word_indexer.index_of(w) if self.word_embed.word_indexer.index_of(w) != -1 
-                                      else self.word_embed.word_indexer.index_of("UNK")
-                                      for w in ex.words], dtype=torch.long) for ex in self.examples]
+        self.indices = [torch.tensor([self.word_embed.word_indexer.index_of(w) 
+            if self.word_embed.word_indexer.index_of(w) != -1 
+            else self.word_embed.word_indexer.index_of("UNK")
+            for w in ex.words], dtype=torch.long) for ex in self.examples]
         
     def __len__(self):
         return len(self.examples)
@@ -29,7 +30,6 @@ class SentimentDatasetDAN(Dataset):
         indices_padded = pad_sequence(indices, batch_first=True, padding_value=0)  # PAD index assumed to be 0
         labels = torch.tensor(labels, dtype=torch.long)
         return indices_padded, labels
-        
 
 class DAN(nn.Module):
     def __init__(self, embed_size, hidden_size, vocab_size=None, word_embed=None, dropout=0.2, frozen=True):
