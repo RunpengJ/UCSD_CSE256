@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from BOWmodels import SentimentDatasetBOW, NN2BOW, NN3BOW
 from DANmodels import SentimentDatasetDAN, DAN
+from byte_pair_encoding import Byte_Pair_Encoding
 
 
 # Training function
@@ -210,6 +211,16 @@ def main():
         dan_loss_file = 'dan_loss.png'
         plt.savefig(dan_loss_file)
         print(f"DAN loss plot saved as {dan_loss_file}\n\n")
+
+    elif args.model == "BPE":
+        k = 500
+
+        start_time = time.time()
+        print('Starting BPE')
+        bpe = Byte_Pair_Encoding("data/train.txt", k)
+        print(f"Finish BPE in {time.time() - start_time} seconds")
+        
+
 
 if __name__ == "__main__":
     main()
