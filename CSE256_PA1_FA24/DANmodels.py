@@ -32,7 +32,7 @@ class SentimentDatasetDAN(Dataset):
         
 
 class DAN(nn.Module):
-    def __init__(self, embed_size, hidden_size, vocab_size=None, word_embed=None, frozen=True):
+    def __init__(self, embed_size, hidden_size, vocab_size=None, word_embed=None, dropout=0.2, frozen=True):
         super().__init__()
         # Using pretrained initialization
         
@@ -46,20 +46,14 @@ class DAN(nn.Module):
         self.fc1 = nn.Linear(embed_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
         self.fc3 = nn.Linear(hidden_size, 2)  # Output size for binary classification
+        self.dropout = nn.Dropout(dropout) # dropout
         self.log_softmax = nn.LogSoftmax(dim=1)
 
-    def forward(self, x):
-        max_index = self.embeddings.weight.size(0)  # Size of embedding matrix
-        if torch.max(x) >= max_index:
-            print(f"Error: Index {torch.max(x)} is out of range for embedding size {max_index}")
-
-        if torch.min(x) < 0:
-            print(f"Error: Index {torch.min(x)} is smaller than 0")
-        
+    def forward(self, x): 
         x = self.embeddings(x)
-        # x = F.relu(x)
         x = x.mean(dim=1)  # Average embeddings to get a fixed-size vector
         x = F.relu(self.fc1(x))
+        x = self.dropout(x)
         x = F.relu(self.fc2(x))
         x = self.fc3(x)  # Remove ReLU here before log softmax
         x = self.log_softmax(x)

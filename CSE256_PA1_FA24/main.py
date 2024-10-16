@@ -16,12 +16,14 @@ from byte_pair_encoding import Byte_Pair_Encoding
 
 
 # Training function
-def train_epoch(data_loader, model, loss_fn, optimizer):
+def train_epoch(data_loader, model, loss_fn, optimizer, device):
     size = len(data_loader.dataset)
     num_batches = len(data_loader)
     model.train()
     train_loss, correct = 0, 0
     for batch, (X, y) in enumerate(data_loader):
+        X, y = X.to(device), y.to(device)
+
         if not isinstance(model, DAN):
             X = X.float()
 
@@ -42,13 +44,14 @@ def train_epoch(data_loader, model, loss_fn, optimizer):
 
 
 # Evaluation function
-def eval_epoch(data_loader, model, loss_fn, optimizer):
+def eval_epoch(data_loader, model, loss_fn, device):
     size = len(data_loader.dataset)
     num_batches = len(data_loader)
     model.eval()
     eval_loss = 0
     correct = 0
     for batch, (X, y) in enumerate(data_loader):
+        X, y = X.to(device), y.to(device)
         if not isinstance(model, DAN):
             X = X.float()
 
@@ -64,7 +67,7 @@ def eval_epoch(data_loader, model, loss_fn, optimizer):
 
 
 # Experiment function to run training and evaluation for multiple epochs
-def experiment(model, train_loader, test_loader):
+def experiment(model, train_loader, test_loader, device):
     loss_fn = nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
@@ -72,13 +75,15 @@ def experiment(model, train_loader, test_loader):
     all_test_accuracy = []
     all_train_loss = []
     all_test_loss = []
+
+    model = model.to(device)
+
     for epoch in range(100):
-        train_accuracy, train_loss = train_epoch(train_loader, model, loss_fn, optimizer)
+        train_accuracy, train_loss = train_epoch(train_loader, model, loss_fn, optimizer, device)
         all_train_accuracy.append(train_accuracy)
         all_train_loss.append(train_loss)
 
-
-        test_accuracy, test_loss = eval_epoch(test_loader, model, loss_fn, optimizer)
+        test_accuracy, test_loss = eval_epoch(test_loader, model, loss_fn, device)
         all_test_accuracy.append(test_accuracy)
         all_test_loss.append(test_loss)
 
@@ -96,6 +101,9 @@ def main():
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Device: {device}")
+
     if args.model == "BOW":
         # Load dataset
         start_time = time.time()
@@ -111,11 +119,11 @@ def main():
         # Train and evaluate NN2
         start_time = time.time()
         print('\n2 layers:')
-        nn2_train_accuracy, nn2_test_accuracy, nn2_train_loss, nn2_test_loss = experiment(NN2BOW(input_size=512, hidden_size=100), train_loader, test_loader)
+        nn2_train_accuracy, nn2_test_accuracy, nn2_train_loss, nn2_test_loss = experiment(NN2BOW(input_size=512, hidden_size=100), train_loader, test_loader, device)
 
         # Train and evaluate NN3
         print('\n3 layers:')
-        nn3_train_accuracy, nn3_test_accuracy, nn3_train_loss, nn3_test_loss = experiment(NN3BOW(input_size=512, hidden_size=100), train_loader, test_loader)
+        nn3_train_accuracy, nn3_test_accuracy, nn3_train_loss, nn3_test_loss = experiment(NN3BOW(input_size=512, hidden_size=100), train_loader, test_loader, device)
 
         # Plot the training accuracy
         plt.figure(figsize=(8, 6))
@@ -167,23 +175,25 @@ def main():
         print(f"Data loaded in : {time.time() - start_time} seconds")
 
         # Train and evaluate pretrained DAN
-        start_time = time.time()
         print("Pretrained DAN :")
-        pre_DAN_train_accuracy, pre_DAN_test_accuracy, pre_DAN_train_loss, pre_DAN_test_loss = experiment(DAN(embed_size=300, hidden_size=100, word_embed=word_embeddings, frozen=False), train_loader, test_loader)
+        start_time = time.time()
+        pretrain_train_accuracy, pretrain_test_accuracy, pretrain_train_loss, pretrain_test_loss = experiment(
+            DAN(embed_size=300, hidden_size=100, word_embed=word_embeddings, frozen=True), train_loader, test_loader, device)
         print(f"Finished training in : {time.time() - start_time} seconds")
 
         # Randomly initialized embeddings 
         print("DAN")
         start_time = time.time()
-        DAN_train_accuracy, DAN_test_accuracy, rand_DAN_train_loss, rand_DAN_test_loss = experiment(DAN(embed_size=300, hidden_size=100, vocab_size=word_embeddings.word_indexer.__len__()), train_loader, test_loader)
+        rand_init_train_accuracy, rand_init_test_accuracy, rand_init_train_loss, rand_init_test_loss = experiment(
+            DAN(embed_size=50, hidden_size=100, vocab_size=word_embeddings.word_indexer.__len__()), train_loader, test_loader, device)
         print(f"Finished training in : {time.time() - start_time} seconds")
 
-        # Plot the training and testing accuracy
+        # Plot the accuracy
         plt.figure(figsize=(8, 6))
-        plt.plot(pre_DAN_train_accuracy, label='Pretrained DAN Training')
-        plt.plot(pre_DAN_test_accuracy, label='Pretrained DAN Testing')
-        plt.plot(DAN_train_accuracy, label='DAN Training')
-        plt.plot(DAN_test_accuracy, label='DAN Testing')
+        plt.plot(pretrain_train_accuracy, label='Pretrained DAN Training')
+        plt.plot(pretrain_test_accuracy, label='Pretrained DAN Testing')
+        plt.plot(rand_init_train_accuracy, label='DAN Training')
+        plt.plot(rand_init_test_accuracy, label='DAN Testing')
         plt.xlabel('Epochs')
         plt.ylabel('Accuracy')
         plt.title('Accuracy for training and testing')
@@ -195,12 +205,12 @@ def main():
         plt.savefig(dan_accuracy_file)
         print(f"Accuracy plot saved as {dan_accuracy_file}\n\n")
 
-        # Plot the training and testing loss
+        # Plot the loss
         plt.figure(figsize=(8, 6))
-        plt.plot(pre_DAN_train_loss, label='Pretrained DAN Training')
-        plt.plot(pre_DAN_test_loss, label='Pretrained DAN Testing')
-        plt.plot(rand_DAN_train_loss, label='DAN Training')
-        plt.plot(rand_DAN_test_loss, label='DAN Testing')
+        plt.plot(pretrain_train_loss, label='Pretrained DAN Training')
+        plt.plot(pretrain_test_loss, label='Pretrained DAN Testing')
+        plt.plot(rand_init_train_loss, label='DAN Training')
+        plt.plot(rand_init_test_loss, label='DAN Testing')
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
         plt.title('Loss for training and testing')
@@ -227,13 +237,14 @@ def main():
         # Train model
         print("##### Training SUBWORDDAN #####")
         start_time = time.time()
-        subword_DAN_train_accuracy, subword_DAN_test_accuracy, subword_DAN_train_loss, subword_DAN_test_loss = experiment(DAN(embed_size=300, hidden_size=100, vocab_size=K), train_loader, test_loader)
+        subword_train_accuracy, subword_test_accuracy, subword_train_loss, subword_test_loss = experiment(
+            DAN(embed_size=300, hidden_size=100, vocab_size=K), train_loader, test_loader, device)
         print(f"Finished training in : {time.time() - start_time} seconds")
 
         # Plot the training and testing accuracy
         plt.figure(figsize=(8, 6))
-        plt.plot(subword_DAN_train_accuracy, label='Training')
-        plt.plot(subword_DAN_test_accuracy, label='Testing')
+        plt.plot(subword_train_accuracy, label='Training')
+        plt.plot(subword_test_accuracy, label='Testing')
         plt.xlabel('Epochs')
         plt.ylabel('Accuracy')
         plt.title('Accuracy for training and testing')
@@ -247,8 +258,8 @@ def main():
 
         # Plot the training and testing loss
         plt.figure(figsize=(8, 6))
-        plt.plot(subword_DAN_train_loss, label='Training')
-        plt.plot(subword_DAN_test_loss, label='Testing')
+        plt.plot(subword_train_loss, label='Training')
+        plt.plot(subword_test_loss, label='Testing')
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
         plt.title('Loss for training and testing')
