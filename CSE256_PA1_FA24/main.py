@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader
 from BOWmodels import SentimentDatasetBOW, NN2BOW, NN3BOW
 from DANmodels import SentimentDatasetDAN, DAN
 from byte_pair_encoding import Byte_Pair_Encoding
+from EarlyStopping import EarlyStopping
 
 
 # Training function
@@ -67,9 +68,12 @@ def eval_epoch(data_loader, model, loss_fn, device):
 
 
 # Experiment function to run training and evaluation for multiple epochs
-def experiment(model, train_loader, test_loader, device):
+def experiment(model, train_loader, test_loader, device, lr=0.0001, patience=5):
     loss_fn = nn.NLLLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
+
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.1, verbose=True)
+    early_stopping = EarlyStopping(patience=patience, verbose=True)
 
     all_train_accuracy = []
     all_test_accuracy = []
@@ -87,9 +91,17 @@ def experiment(model, train_loader, test_loader, device):
         all_test_accuracy.append(test_accuracy)
         all_test_loss.append(test_loss)
 
+        # scheduler.step(test_loss)
+
         if epoch % 10 == 9:
-            print(f'Epoch #{epoch + 1}: train accuracy {train_accuracy:.3f}, dev accuracy {test_accuracy:.3f}')
-    
+            print(f'Epoch #{epoch + 1}: train accuracy {train_accuracy:.3f}, dev accuracy {test_accuracy:.3f}, train loss {train_loss:.3f}, dev loss {test_loss:.3f}')
+
+        early_stopping(test_loss, model)
+
+        if early_stopping.early_stop:
+            print("Early stopping triggered. Stopping training.")
+            break
+
     return all_train_accuracy, all_test_accuracy, all_train_loss, all_test_loss
 
 
@@ -223,22 +235,22 @@ def main():
         print(f"Loss plot saved as {dan_loss_file}\n\n")
 
     elif args.model == "SUBWORDDAN":
-        K = 10000
+        K = 5000
 
         print('##### Loading dataset #####')
         start_time = time.time()
         train_data = Byte_Pair_Encoding("data/train.txt", K)
         test_data = Byte_Pair_Encoding("data/dev.txt", K, indexer=train_data.indexer, merge_ops=train_data.merge_ops)
-        print(f"##### Finish BPE in {time.time() - start_time} secounds ##### ")
+        print(f"##### Finish BPE in {time.time() - start_time} secounds. Vocab size: {train_data.indexer.__len__()} ##### ")
         
         train_loader = DataLoader(train_data, batch_size=16, shuffle=True, collate_fn=train_data.collate_fn)
-        test_loader = DataLoader(test_data, batch_size=16, shuffle=True, collate_fn=test_data.collate_fn)
+        test_loader = DataLoader(test_data, batch_size=16, shuffle=False, collate_fn=test_data.collate_fn)
         
         # Train model
         print("##### Training SUBWORDDAN #####")
         start_time = time.time()
         subword_train_accuracy, subword_test_accuracy, subword_train_loss, subword_test_loss = experiment(
-            DAN(embed_size=300, hidden_size=100, vocab_size=K), train_loader, test_loader, device)
+            DAN(embed_size=200, hidden_size=50, vocab_size=K), train_loader, test_loader, device, lr=0.0001)
         print(f"Finished training in : {time.time() - start_time} seconds")
 
         # Plot the training and testing accuracy

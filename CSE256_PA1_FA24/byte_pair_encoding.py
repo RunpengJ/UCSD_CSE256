@@ -21,7 +21,7 @@ class Byte_Pair_Encoding(Dataset):
             print("##### Computing merge operations #####")
             self.merge_ops = self.compute_merge_ops(num_of_vocab)
             
-            print("###### Start encoding ... ###### ")
+            print("###### Encoding ... ###### ")
             self.encode() 
 
         else:
@@ -49,20 +49,21 @@ class Byte_Pair_Encoding(Dataset):
             best = max(pairs, key=pairs.get)
             self.vocab = self.merge_vocab(best, self.vocab)
             merge_ops.append(best)
-            self.indexer.add_and_get_index(''.join(best))
+            merged_token = ''.join(best)
+            self.indexer.add_and_get_index(merged_token)
 
             if self.indexer.__len__() % 1000 == 0:
                 print(f'Vocabsize: {self.indexer.__len__()}')
 
         return merge_ops
+    
 
     def get_stats(self, vocab):
         pairs = collections.Counter()
         for word, freq in vocab.items():
             symbols = word.split()
-            pairs.update((symbols[i], symbols[i + 1]) for i in range(len(symbols) - 1))
-            # for i in range(len(symbols)-1):
-            #     pairs[symbols[i], symbols[i+1]] += freq
+            for i in range(len(symbols)-1):
+                pairs[symbols[i], symbols[i+1]] += freq
         return pairs
 
     def merge_vocab(self, pair, v_in):
@@ -85,7 +86,7 @@ class Byte_Pair_Encoding(Dataset):
     def merge_word(self, tokens):
         sentence = ' '.join(tokens)
         for pair in self.merge_ops:
-            if ' '.join(pair) in sentence:
+             if ' '.join(pair) in sentence:
                 sentence = re.sub(re.escape(' '.join(pair)), ''.join(pair), sentence)
         return sentence.split()
                 
@@ -95,12 +96,6 @@ class Byte_Pair_Encoding(Dataset):
     
     def __getitem__(self, idx):
         return self.indices[idx], self.labels[idx]
-    
-    # def collate_fn(self, batch):
-    #     indices, labels = zip(*batch)
-    #     indices_padded = pad_sequence(indices, batch_first=True, padding_value=0)  # PAD index assumed to be 0
-    #     labels = torch.tensor(labels, dtype=torch.long)
-    #     return indices_padded, labels
 
     def collate_fn(self, batch):
         indices, labels = zip(*batch)

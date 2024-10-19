@@ -41,13 +41,28 @@ class DAN(nn.Module):
         else:
             # Initialization without pretrained
             self.embeddings = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
-            init.kaiming_uniform_(self.embeddings.weight)
+            nn.init.kaiming_uniform_(self.embeddings.weight)
 
         self.fc1 = nn.Linear(embed_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
         self.fc3 = nn.Linear(hidden_size, 2)  # Output size for binary classification
+        
+        self._initialization()
+
         self.dropout = nn.Dropout(dropout) # dropout
         self.log_softmax = nn.LogSoftmax(dim=1)
+
+    def _initialization(self):
+        # Kaiming initialization for ReLU activations
+        nn.init.kaiming_uniform_(self.fc1.weight, nonlinearity='relu')
+        nn.init.kaiming_uniform_(self.fc2.weight, nonlinearity='relu')
+        nn.init.kaiming_uniform_(self.fc3.weight)
+
+        # Initialize biases to zero
+        nn.init.zeros_(self.fc1.bias)
+        nn.init.zeros_(self.fc2.bias)
+        nn.init.zeros_(self.fc3.bias)
+        
 
     def forward(self, x): 
         x = self.embeddings(x)
@@ -55,7 +70,7 @@ class DAN(nn.Module):
         x = F.relu(self.fc1(x))
         x = self.dropout(x)
         x = F.relu(self.fc2(x))
-        x = self.fc3(x)  # Remove ReLU here before log softmax
+        x = self.fc3(x) 
         x = self.log_softmax(x)
         return x
     
