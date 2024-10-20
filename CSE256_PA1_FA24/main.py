@@ -190,7 +190,7 @@ def main():
         print("Pretrained DAN :")
         start_time = time.time()
         pretrain_train_accuracy, pretrain_test_accuracy, pretrain_train_loss, pretrain_test_loss = experiment(
-            DAN(embed_size=300, hidden_size=100, word_embed=word_embeddings, frozen=True), train_loader, test_loader, device)
+            DAN(embed_size=300, hidden_size=100, word_embed=word_embeddings, frozen=False), train_loader, test_loader, device)
         print(f"Finished training in : {time.time() - start_time} seconds")
 
         # Randomly initialized embeddings 
@@ -235,7 +235,7 @@ def main():
         print(f"Loss plot saved as {dan_loss_file}\n\n")
 
     elif args.model == "SUBWORDDAN":
-        K = 5000
+        K = 10000
 
         print('##### Loading dataset #####')
         start_time = time.time()
