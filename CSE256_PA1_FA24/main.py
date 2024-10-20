@@ -72,7 +72,7 @@ def experiment(model, train_loader, test_loader, device, lr=0.0001, patience=5):
     loss_fn = nn.NLLLoss()
     optimizer = optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
 
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.1, verbose=True)
+    # Use earlystopping to avoid the model from overfitting
     early_stopping = EarlyStopping(patience=patience, verbose=True)
 
     all_train_accuracy = []
@@ -100,6 +100,7 @@ def experiment(model, train_loader, test_loader, device, lr=0.0001, patience=5):
 
         if early_stopping.early_stop:
             print("Early stopping triggered. Stopping training.")
+            print(f'Epoch #{epoch + 1}: train accuracy {train_accuracy:.3f}, dev accuracy {test_accuracy:.3f}, train loss {train_loss:.3f}, dev loss {test_loss:.3f}')
             break
 
     return all_train_accuracy, all_test_accuracy, all_train_loss, all_test_loss
@@ -237,6 +238,7 @@ def main():
     elif args.model == "SUBWORDDAN":
         K = 10000
 
+        # Load the dataset and run BPE
         print('##### Loading dataset #####')
         start_time = time.time()
         train_data = Byte_Pair_Encoding("data/train.txt", K)

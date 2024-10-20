@@ -2,7 +2,10 @@ import torch
 import numpy as np
 
 
-### This class is written by ChatGPT. ###
+""" 
+This class is written by ChatGPT, 
+as there is no package of earlystopping supporting Pytorch.
+"""
 
 class EarlyStopping:
     def __init__(self, patience=5, verbose=False, delta=0):
