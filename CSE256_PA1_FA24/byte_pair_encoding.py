@@ -6,16 +6,22 @@ from utils import *
 import re, collections
 import time
 
+
 class Byte_Pair_Encoding(Dataset):
     def __init__(self, infile, num_of_vocab, indexer=None, merge_ops=None):
+        # Read sentiment examples from the input file
         self.examples = read_sentiment_examples(infile)
         self.labels = torch.tensor([ex.label for ex in self.examples], dtype=torch.long)
 
         if indexer is None:
+            # If indexer is None, we are preparing the training set
+
             self.indexer = Indexer()
             self.indexer.add_and_get_index("PAD")
             self.indexer.add_and_get_index("UNK")
             self.indexer.add_and_get_index("</w>")
+
+            # Build vocabulary from the corpus
             self.vocab = self.build_vocab()
 
             print("##### Computing merge operations #####")
@@ -23,13 +29,14 @@ class Byte_Pair_Encoding(Dataset):
             
             print("###### Encoding ... ###### ")
             self.encode() 
-
         else:
+            # If indexer is provided, we are preparing the dev set
             self.indexer = indexer
             self.merge_ops = merge_ops
             self.encode()
 
     def build_vocab(self):
+        # Create a vocabulary from the corpus
         vocab = collections.defaultdict(int)
         for ex in self.examples:
             for w in ex.words:
@@ -41,6 +48,7 @@ class Byte_Pair_Encoding(Dataset):
         return vocab
     
     def compute_merge_ops(self, num_of_vocab):
+        # Compute merge operations for Byte Pair Encoding
         num_of_merge = num_of_vocab - self.indexer.__len__()
         merge_ops = []
 
@@ -59,6 +67,7 @@ class Byte_Pair_Encoding(Dataset):
     
 
     def get_stats(self, vocab):
+        # Count frequency of adjacent pairs in the vocabulary
         pairs = collections.Counter()
         for word, freq in vocab.items():
             symbols = word.split()
@@ -67,6 +76,7 @@ class Byte_Pair_Encoding(Dataset):
         return pairs
 
     def merge_vocab(self, pair, v_in):
+        # Merge the most frequent pair in the vocabulary
         v_out = collections.defaultdict(int)
         bigram = re.escape(' '.join(pair))
         p = re.compile(r'(?<!\S)' + bigram + r'(?!\S)')
@@ -75,8 +85,8 @@ class Byte_Pair_Encoding(Dataset):
             v_out[w_out] = v_in[word]
         return v_out
     
-    # given an example, return list of integers (the token)
     def encode(self):
+        # Encode the dataset using the computed merge operations
         self.indices = []
         for ex in self.examples:
             tokens = [c for w in ex.words for c in list(w) + ["</w>"]]
@@ -84,6 +94,7 @@ class Byte_Pair_Encoding(Dataset):
             self.indices.append(torch.tensor([self.indexer.index_of(w) if self.indexer.contains(w) else self.indexer.index_of("UNK") for w in merged], dtype=torch.long))
 
     def merge_word(self, tokens):
+        # Apply merge operations to a single word
         sentence = ' '.join(tokens)
         for pair in self.merge_ops:
              if ' '.join(pair) in sentence:
@@ -98,6 +109,7 @@ class Byte_Pair_Encoding(Dataset):
         return self.indices[idx], self.labels[idx]
 
     def collate_fn(self, batch):
+         # Collate function for DataLoader to handle variable-length sequences
         indices, labels = zip(*batch)
         indices_padded = pad_sequence(indices, batch_first=True, padding_value=self.indexer.index_of('PAD'))  # Use PAD index
         return indices_padded, torch.stack(labels)
