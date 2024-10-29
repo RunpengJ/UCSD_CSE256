@@ -1,19 +1,45 @@
 import torch
 import torch.nn as nn
 
+class InputEmbedding(nn.Module):
+    """
+    Creat word embeddings. Convert each word in the input sequence to an embedding vector.
+    """
+
+    def __init__(self, vocab_size, d_model, dropout=0.1):
+        super().__init__()
+        self.token_embedding = nn.Embedding(vocab_size, d_model)
+        self.dropout = nn.Dropout(p=dropout)
+
+        self.vocab_size = vocab_size
+        self.d_model = d_model
+
+        self._init_embeddings()
+
+    def _init_embeddings(self):
+        nn.init.normal_(self.pos_embedding.weight, mean=0, std=0.2)
+
+    def forward(self, x):
+        out = self.token_embedding(x)
+        return self.dropout(out)
+
+
+
 class PositionalEmbedding(nn.Module):
     """
     Absolute positional embedding. The positional embedding are added to the token embeddings before being fed into the encoder or decoder
     """
 
-    def __init__(self, embed_dim, max_seq_len, dropout=0.1):
+    def __init__(self, max_seq_len, d_model, dropout=0.1):
         super().__init__()
 
-        self.pos_embedding = nn.Embedding(max_seq_len, embed_dim)
+        self.pos_embedding = nn.Embedding(max_seq_len, d_model)
         self.dropout = nn.Dropout(p=dropout)
 
-        self.embed_dim = embed_dim
+        self.d_model = d_model
         self.max_seq_len = max_seq_len
+
+        self._init_embeddings()
 
 
     def _init_embeddings(self):

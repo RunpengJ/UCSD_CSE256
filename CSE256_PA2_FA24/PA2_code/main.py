@@ -125,12 +125,12 @@ def main():
             # CLS training code here
 
 
-    # for the language modeling task, you will iterate over the training data for a fixed number of iterations like this:
-    for i, (xb, yb) in enumerate(train_LM_loader):
-        if i >= max_iters:
-            break
-        xb, yb = xb.to(device), yb.to(device)
-        # LM training code here
+    # # for the language modeling task, you will iterate over the training data for a fixed number of iterations like this:
+    # for i, (xb, yb) in enumerate(train_LM_loader):
+    #     if i >= max_iters:
+    #         break
+    #     xb, yb = xb.to(device), yb.to(device)
+    #     # LM training code here
 
     
 
