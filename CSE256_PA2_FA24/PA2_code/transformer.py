@@ -6,6 +6,7 @@ from Attention import MultiHeadAttention
 
 class TransformerBlock(nn.Module):
     def __init__(self):
+        
         None
 
 
