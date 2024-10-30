@@ -10,48 +10,50 @@ class MultiHeadAttention(nn.Module):
         self.d_model = d_model
         self.num_heads = num_heads
 
-        self.head_dim = self.d_model / num_heads
+        self.head_dim = self.d_model // num_heads
 
-        self.query = nn.Linear(self.head_dim, self.head_dim, bias=False)
-        self.key = nn.Linear(self.head_dim, self.head_dim, bias=False)
-        self.value = nn.Linear(self.head_dim, self.head_dim, bias=False)
+        self.query = nn.Linear(self.d_model, self.d_model, bias=False)
+        self.key = nn.Linear(self.d_model, self.d_model, bias=False)
+        self.value = nn.Linear(self.d_model, self.d_model, bias=False)
 
         self.out = nn.Linear(self.d_model, self.d_model)
 
         self._initialization()
 
     def _initialization(self):
-        None
+        for p in self.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
 
 
     def forward(self, query, key, value, mask=None):
-        batch_size, seq_length = key.size(0), key.size(1)
-
+        batch_size = key.size(0)
+        seq_length = key.size(1)
         seq_length_query = query.size(1)
 
-        query = query.view(batch_size, seq_length, self.num_heads, self.head_dim)
-        key = key.view(batch_size, seq_length_query, self.num_heads, self.head_dim)
+        query = self.query(query)
+        key = self.key(key)
+        value = self.value(value)
+
+        query = query.view(batch_size, seq_length_query, self.num_heads, self.head_dim)
+        key = key.view(batch_size, seq_length, self.num_heads, self.head_dim)
         value = value.view(batch_size, seq_length, self.num_heads, self.head_dim)
 
-        q = self.query(query)
-        k = self.key(key)
-        v = self.value(value)
+        q = query.transpose(1,2)    # batch_size x num_heads x seq_lenth x head_dim
+        k = key.transpose(1,2) 
+        v = value.transpose(1,2)    
 
-        q = q.transpose(1,2)    # batch_size x num_heads x seq_lenth x head_dim
-        k = k.transpose(1,2) 
-        v = v.transpose(1,2)    
-
-        k = k.transpose(-1, -2)    # batch_size x num_heads x head_dim x seq_lenth
-        product = q @ k
+        k_t = k.transpose(-1, -2)    # batch_size x num_heads x head_dim x seq_lenth
+        product = torch.matmul(q, k_t) / math.sqrt(self.head_dim)
 
         if mask is not None:
             product = product.mask_filled(mask == 0, float("-inf"))
 
-        product = product / math.sqrt(self.head_dim)
-
         scores = F.softmax(product, dim=-1)
+        attention = scores @ v
 
-        concat = scores.transpose(1, 2).contiguous().view(batch_size, seq_length, self.d_model)
+        attention = attention.transpose(1, 2).contiguous()
+        concat = attention.view(batch_size, seq_length, self.d_model)
 
         out = self.out(concat)
 
