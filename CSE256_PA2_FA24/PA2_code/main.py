@@ -5,6 +5,8 @@ import os
 
 from tokenizer import SimpleTokenizer
 from dataset import SpeechesClassificationDataset, LanguageModelingDataset
+from transformer import TransformerEncoder
+from classifier import Classifier,SpeechClassifier
 
 
 
@@ -104,6 +106,30 @@ def train_classifier(classifier, data_loader, loss_fn, optimizer):
     train_loss = total_train_loss / total_samples
     return accuracy, train_loss
 
+def experiment_classifier(n_epoch, train_loader, test_loader, classifier, loss_fn, optimizer, lr):
+    all_train_accuracy = []
+    all_test_accuracy = []
+    all_train_loss = []
+    all_test_loss = []
+
+    classifier = classifier.to(device)
+
+    for epoch in range(n_epoch):
+        train_accuracy, train_loss = train_classifier(train_loader, classifier, loss_fn, optimizer)
+        all_train_accuracy.append(train_accuracy)
+        all_train_loss.append(train_loss)
+
+        test_accuracy, test_loss = eval_classifier(test_loader, classifier, loss_fn)
+        all_test_accuracy.append(test_accuracy)
+        all_test_loss.append(test_loss)
+
+        # scheduler.step(test_loss)
+
+        if epoch % 10 == 9:
+            print(f'Epoch #{epoch + 1}: train accuracy {train_accuracy:.3f}, dev accuracy {test_accuracy:.3f}, train loss {train_loss:.3f}, dev loss {test_loss:.3f}')
+
+    return all_train_accuracy, all_test_accuracy, all_train_loss, all_test_loss
+
 def compute_perplexity(decoderLMmodel, data_loader, eval_iters=100):
     """ Compute the perplexity of the decoderLMmodel on the data in data_loader.
     Make sure to use the cross entropy loss for the decoderLMmodel.
@@ -136,18 +162,19 @@ def main():
     train_CLS_dataset = SpeechesClassificationDataset(tokenizer, "speechesdataset/train_CLS.tsv")
     train_CLS_loader = DataLoader(train_CLS_dataset, batch_size=batch_size,collate_fn=collate_batch,shuffle=True)
 
+    encoder = TransformerEncoder()
   
-    inputfile = "speechesdataset/train_LM.txt"
-    with open(inputfile, 'r', encoding='utf-8') as f:
-        lmtrainText = f.read()
-    train_LM_dataset = LanguageModelingDataset(tokenizer, lmtrainText,  block_size)
-    train_LM_loader = DataLoader(train_LM_dataset, batch_size=batch_size, shuffle=True)
+    # inputfile = "speechesdataset/train_LM.txt"
+    # with open(inputfile, 'r', encoding='utf-8') as f:
+    #     lmtrainText = f.read()
+    # train_LM_dataset = LanguageModelingDataset(tokenizer, lmtrainText,  block_size)
+    # train_LM_loader = DataLoader(train_LM_dataset, batch_size=batch_size, shuffle=True)
 
      # for the classification  task, you will train for a fixed number of epochs like this:
 
-    for epoch in range(epochs_CLS):
-        for xb, yb in train_CLS_loader:
-            xb, yb = xb.to(device), yb.to(device)
+    # for epoch in range(epochs_CLS):
+    #     for xb, yb in train_CLS_loader:
+    #         xb, yb = xb.to(device), yb.to(device)
 
             # CLS training code here
 
