@@ -7,6 +7,7 @@ from tokenizer import SimpleTokenizer
 from dataset import SpeechesClassificationDataset, LanguageModelingDataset
 
 
+
 seed = 42
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -61,22 +62,47 @@ def collate_batch(batch):
     return padded_sequences, labels
 
 
-def compute_classifier_accuracy(classifier, data_loader):
+def eval_classifier(classifier, data_loader, loss_fn):
     """ Compute the accuracy of the classifier on the data in data_loader."""
     classifier.eval()
     total_correct = 0
     total_samples = 0
+    total_train_loss = 0
     with torch.no_grad():
         for X, Y in data_loader:
             X, Y = X.to(device), Y.to(device)
             outputs = classifier(X)
             _, predicted = torch.max(outputs.data, 1)
+            loss = loss_fn(predicted, Y)
+            train_loss += loss.item()
             total_correct += (predicted == Y).sum().item()
             total_samples += Y.size(0)
         accuracy = (100 * total_correct / total_samples)
-        classifier.train()
-        return accuracy
+        train_loss = total_train_loss / total_samples
+        return accuracy, train_loss
 
+def train_classifier(classifier, data_loader, loss_fn, optimizer):
+    classifier.train()
+    total_correct = 0
+    total_samples = 0
+    total_train_loss = 0
+    for X, Y in data_loader:
+        X, Y = X.to(device), Y.to(device)
+        outputs = classifier(X)
+        _, predicted = torch.max(outputs.data, 1)
+        loss = loss_fn(predicted, Y)
+        train_loss += loss.item()
+        total_correct += (predicted == Y).sum().item()
+        total_samples += Y.size(0)
+
+        # Backpropagation
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+    accuracy = (100 * total_correct / total_samples)
+    train_loss = total_train_loss / total_samples
+    return accuracy, train_loss
 
 def compute_perplexity(decoderLMmodel, data_loader, eval_iters=100):
     """ Compute the perplexity of the decoderLMmodel on the data in data_loader.
@@ -98,16 +124,6 @@ def compute_perplexity(decoderLMmodel, data_loader, eval_iters=100):
 
     decoderLMmodel.train()
     return perplexity
-
-
-def train(data_loader, model, loss_fn, optimizer):
-    size = len(data_loader.dataset)
-    num_batches = len(data_loader)
-    model.train()
-    train_loss, correct = 0, 0
-
-    for batch, (X, y) in enumerate(data_loader):
-        X, y = X.to(device), y.to(device)
 
 
 def main():

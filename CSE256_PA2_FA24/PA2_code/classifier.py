@@ -14,6 +14,7 @@ class Classifier(nn.Module):
         out = self.ff(x)
         out = self.softmax(out)
         return out
+    
 
 class SpeechClassifier(nn.Module):
     def __init__(self, encoder, classifier):
