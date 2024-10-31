@@ -37,12 +37,12 @@ class TransformerBlock(nn.Module):
 
 
 class TransformerEncoder(nn.Module):
-    def __init__(self, seq_lenth, vocab_size, d_model, num_encoders=2, d_ff=None, num_heads=2):
+    def __init__(self, seq_lenth, vocab_size, d_model, num_layers=2, d_ff=None, num_heads=2):
         super().__init__()
 
         self.input_embedding = InputEmbedding(vocab_size, d_model)
         self.pos_embedding = PositionalEmbedding(seq_lenth, d_model)
-        self.layers = nn.ModuleList([TransformerBlock(d_model, d_ff, num_heads) for i in range(num_encoders)])
+        self.layers = nn.ModuleList([TransformerBlock(d_model, d_ff, num_heads) for i in range(num_layers)])
 
     def forward(self, x):
         out = self.input_embedding(x)
