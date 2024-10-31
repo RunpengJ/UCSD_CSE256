@@ -100,6 +100,16 @@ def compute_perplexity(decoderLMmodel, data_loader, eval_iters=100):
     return perplexity
 
 
+def train(data_loader, model, loss_fn, optimizer):
+    size = len(data_loader.dataset)
+    num_batches = len(data_loader)
+    model.train()
+    train_loss, correct = 0, 0
+
+    for batch, (X, y) in enumerate(data_loader):
+        X, y = X.to(device), y.to(device)
+
+
 def main():
 
     print("Loading data and creating tokenizer ...")
