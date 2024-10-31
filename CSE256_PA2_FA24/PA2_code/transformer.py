@@ -2,9 +2,9 @@
 import torch
 import torch.nn as nn
 
-from Attention import MultiHeadAttention
-from FeedForward import FeedForward
-from Embedding import InputEmbedding, PositionalEmbedding
+from attneiton import MultiHeadAttention
+from feed_forward import FeedForward
+from embedding import InputEmbedding, PositionalEmbedding
 
 class TransformerBlock(nn.Module):
     def __init__(self, d_model, d_ff=None, num_heads=2, dropout=0.1):
