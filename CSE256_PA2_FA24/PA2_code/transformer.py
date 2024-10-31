@@ -37,7 +37,7 @@ class TransformerBlock(nn.Module):
 
 
 class TransformerEncoder(nn.Module):
-    def __init__(self, seq_lenth, vocab_size, d_model, num_layers=2, d_ff=None, num_heads=2):
+    def __init__(self, seq_lenth, vocab_size, d_model, num_layers=4, d_ff=None, num_heads=2):
         super().__init__()
 
         self.input_embedding = InputEmbedding(vocab_size, d_model)
