@@ -49,7 +49,6 @@ def load_texts(directory):
     return texts
 
 
-
 def collate_batch(batch):
     """ Collate a batch of data into a single tensor with padding."""
     data, labels = zip(*batch)  # Separate the data and labels
@@ -60,6 +59,7 @@ def collate_batch(batch):
     padded_sequences = torch.nn.functional.pad(padded_sequences, (0, max(0, block_size - padded_sequences.shape[1])), "constant", 0)
     labels = torch.stack(labels)  
     return padded_sequences, labels
+
 
 def compute_classifier_accuracy(classifier, data_loader):
     """ Compute the accuracy of the classifier on the data in data_loader."""
@@ -98,6 +98,7 @@ def compute_perplexity(decoderLMmodel, data_loader, eval_iters=100):
 
     decoderLMmodel.train()
     return perplexity
+
 
 def main():
 

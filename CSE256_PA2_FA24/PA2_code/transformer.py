@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 
-from attneiton import MultiHeadAttention
+from CSE256_PA2_FA24.PA2_code.attention import MultiHeadAttention
 from feed_forward import FeedForward
 from embedding import InputEmbedding, PositionalEmbedding
 
