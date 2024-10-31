@@ -1,20 +1,28 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+from feed_forward import FeedForward
 
-class SpeechClassifier(nn.Module):
-    def __init__(self, d_model, d_out) -> None:
+
+class Classifier(nn.Module):
+    def __init__(self, d_model, d_hidden, d_out) -> None:
         super().__init__()
 
-        self.linear = nn.Linear(d_model. d_out)
-        self.softmax = nn.Softmax(d_out)
-
-        self.d_model = d_model
-        self.d_out = d_out
+        self.ff = FeedForward(d_model=d_model, d_ff=d_hidden, d_out=d_out, activate_fn=F.relu)
 
     def forward(self, x):
-
-        out = self.linear(x)
-
+        out = self.ff(x)
         out = self.softmax(out)
-        
+        return out
+
+class SpeechClassifier(nn.Module):
+    def __init__(self, encoder, classifier):
+        super().__init__()
+        self.encoder = encoder
+        self.classifier = classifier
+
+    def forward(self, x):
+        out = self.encoder(x)
+        out = self.classifier(out)
+
         return out
