@@ -44,12 +44,12 @@ class MultiHeadAttention(nn.Module):
         v = value.transpose(1,2)    
 
         k_t = k.transpose(-1, -2)    # batch_size x num_heads x head_dim x seq_lenth
-        product = torch.matmul(q, k_t) / math.sqrt(self.head_dim)
+        scaled_scores = torch.matmul(q, k_t) / math.sqrt(self.head_dim)
 
         if mask is not None:
-            product = product.mask_filled(mask == 0, float("-inf"))
+            scaled_scores = scaled_scores.mask_filled(mask == 0, float("-inf"))
 
-        scores = F.softmax(product, dim=-1)
+        scores = F.softmax(scaled_scores, dim=-1)
         attention = scores @ v
 
         attention = attention.transpose(1, 2).contiguous()

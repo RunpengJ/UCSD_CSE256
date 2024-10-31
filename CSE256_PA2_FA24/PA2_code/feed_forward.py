@@ -30,8 +30,7 @@ class FeedForward(nn.Module):
         
         out = F.gelu(self.linear1(x))
         out = self.dropout(out)
-
         out = self.linear2(out)
-        out = self.dropout(out)
+        # out = self.dropout(out)
 
         return out

@@ -8,7 +8,7 @@ from Embedding import InputEmbedding, PositionalEmbedding
 
 class TransformerBlock(nn.Module):
     def __init__(self, d_model, d_ff=None, num_heads=2, dropout=0.1):
-        super.__init__()
+        super().__init__()
 
         self.d_model = d_model
         self.d_ff = d_ff
@@ -23,9 +23,8 @@ class TransformerBlock(nn.Module):
         self.dropout2 = nn.Dropout(p=dropout)
 
     def forward(self, query, key, value):
-
         attentions = self.multi_head_attention(query, key, value)
-        attentions_res1 = attentions + value
+        attentions_res1 = attentions + query
         attentions_norm1 = self.norm1(attentions_res1)
         attentions_drop1 = self.dropout1(attentions_norm1)
 
@@ -37,23 +36,17 @@ class TransformerBlock(nn.Module):
         return attentions_drop2
 
 
-
-
 class TransformerEncoder(nn.Module):
     def __init__(self, seq_lenth, vocab_size, d_model, num_encoders=2, d_ff=None, num_heads=2):
-        super.__init__()
+        super().__init__()
 
         self.input_embedding = InputEmbedding(vocab_size, d_model)
-
         self.pos_embedding = PositionalEmbedding(seq_lenth, d_model)
-        
         self.layers = nn.ModuleList([TransformerBlock(d_model, d_ff, num_heads) for i in range(num_encoders)])
 
     def forward(self, x):
         out = self.input_embedding(x)
-
         out = self.pos_embedding(out)
-
         for layer in self.layers:
             out = layer(out,out,out)
 
