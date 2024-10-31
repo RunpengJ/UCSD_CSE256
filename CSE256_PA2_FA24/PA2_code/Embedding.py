@@ -21,7 +21,8 @@ class InputEmbedding(nn.Module):
 
     def forward(self, x):
         out = self.token_embedding(x)
-        return self.dropout(out)
+        out = self.dropout(out)
+        return out
 
 
 
@@ -59,7 +60,8 @@ class PositionalEmbedding(nn.Module):
 
         out = token_embeddings + pos_embeddings.unsqueeze(0)
 
-        return self.dropout(out)
+        out = self.dropout(out)
+        return out
 
 
 

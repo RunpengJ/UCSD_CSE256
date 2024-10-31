@@ -53,7 +53,7 @@ class MultiHeadAttention(nn.Module):
         attention = scores @ v
 
         attention = attention.transpose(1, 2).contiguous()
-        concat = attention.view(batch_size, seq_length, self.d_model)
+        concat = attention.view(batch_size, seq_length, self.d_model)   # batch_size x 
 
         out = self.out(concat)
 
