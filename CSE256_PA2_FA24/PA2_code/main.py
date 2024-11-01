@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pad_sequence
 import os
+import matplotlib as plt
 
 from tokenizer import SimpleTokenizer
 from dataset import SpeechesClassificationDataset, LanguageModelingDataset
@@ -162,7 +163,7 @@ def main():
     train_CLS_dataset = SpeechesClassificationDataset(tokenizer, "speechesdataset/train_CLS.tsv")
     train_CLS_loader = DataLoader(train_CLS_dataset, batch_size=batch_size,collate_fn=collate_batch,shuffle=True)
     test_CLS_dataset = SpeechesClassificationDataset(tokenizer, "speechesdataset/test_CLS.tsv")
-    test_CLS_loader = DataLoader(train_CLS_dataset, batch_size=batch_size,collate_fn=collate_batch,shuffle=False)
+    test_CLS_loader = DataLoader(test_CLS_dataset, batch_size=batch_size,collate_fn=collate_batch,shuffle=False)
 
     vocab_size = len(train_CLS_dataset.tokenizer.itos)
     encoder = TransformerEncoder(seq_lenth=block_size, vocab_size=vocab_size, d_model=n_embd, num_layers=n_layer, d_ff=4*n_embd, num_heads=n_head)
@@ -170,11 +171,24 @@ def main():
 
     speech_classifier = SpeechClassifier(encoder, classifier)
     optimizer = torch.optim.adam(speech_classifier.parameters(), lr=learning_rate)
-    train_acc, test_acc, train_loss, test_loss = experiment_classifier(100, train_CLS_loader, test_CLS_loader, speech_classifier, )
+    train_acc, test_acc, train_loss, test_loss = experiment_classifier(epochs_CLS, train_CLS_loader, test_CLS_loader, speech_classifier, optimizer, learning_rate)
 
-  
+    # Plot the training accuracy
+    plt.figure(figsize=(8, 6))
+    plt.plot(train_acc, label='train')
+    plt.plot(test_acc, label='test')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.title('Accuracy for training and testing')
+    plt.legend()
+    plt.grid()
 
-     # for the classification  task, you will train for a fixed number of epochs like this:
+    # Save the training accuracy figure
+    classification_accuracy_file = '../results/classification_accuracy.png'
+    plt.savefig(classification_accuracy_file)
+    print(f"\n\nTraining accuracy plot saved as {classification_accuracy_file}")
+
+    # for the classification  task, you will train for a fixed number of epochs like this:
 
     # for epoch in range(epochs_CLS):
     #     for xb, yb in train_CLS_loader:
