@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pad_sequence
 import os
@@ -65,7 +66,7 @@ def collate_batch(batch):
     return padded_sequences, labels
 
 
-def eval_classifier(classifier, data_loader, loss_fn):
+def eval_classifier(data_loader, classifier, loss_fn):
     """ Compute the accuracy of the classifier on the data in data_loader."""
     classifier.eval()
     total_correct = 0
@@ -74,9 +75,10 @@ def eval_classifier(classifier, data_loader, loss_fn):
     with torch.no_grad():
         for X, Y in data_loader:
             X, Y = X.to(device), Y.to(device)
-            outputs = classifier(X)
-            _, predicted = torch.max(outputs.data, 1)
-            loss = loss_fn(predicted, Y)
+            logits = classifier(X)
+            loss = loss_fn(logits, Y)
+            _, predicted = torch.max(logits, 1)
+            
             train_loss += loss.item()
             total_correct += (predicted == Y).sum().item()
             total_samples += Y.size(0)
@@ -84,17 +86,21 @@ def eval_classifier(classifier, data_loader, loss_fn):
         train_loss = total_train_loss / total_samples
         return accuracy, train_loss
 
-def train_classifier(classifier, data_loader, loss_fn, optimizer):
+def train_classifier(data_loader, classifier, loss_fn, optimizer):
     classifier.train()
     total_correct = 0
     total_samples = 0
     total_train_loss = 0
     for X, Y in data_loader:
         X, Y = X.to(device), Y.to(device)
-        outputs = classifier(X)
-        _, predicted = torch.max(outputs.data, 1)
-        loss = loss_fn(predicted, Y)
-        train_loss += loss.item()
+
+        logits = classifier(X)
+
+        loss = loss_fn(logits, Y)
+
+        _, predicted = torch.max(logits, 1)
+
+        total_train_loss += loss.item()
         total_correct += (predicted == Y).sum().item()
         total_samples += Y.size(0)
 
@@ -107,7 +113,7 @@ def train_classifier(classifier, data_loader, loss_fn, optimizer):
     train_loss = total_train_loss / total_samples
     return accuracy, train_loss
 
-def experiment_classifier(n_epoch, train_loader, test_loader, classifier, loss_fn, optimizer, lr):
+def experiment_classifier(n_epoch, train_loader, test_loader, classifier, loss_fn, optimizer):
     all_train_accuracy = []
     all_test_accuracy = []
     all_train_loss = []
@@ -170,8 +176,9 @@ def main():
     classifier = Classifier(d_model=n_embd, d_hidden=n_hidden, d_out=n_output)
 
     speech_classifier = SpeechClassifier(encoder, classifier)
-    optimizer = torch.optim.adam(speech_classifier.parameters(), lr=learning_rate)
-    train_acc, test_acc, train_loss, test_loss = experiment_classifier(epochs_CLS, train_CLS_loader, test_CLS_loader, speech_classifier, optimizer, learning_rate)
+    optimizer = torch.optim.Adam(speech_classifier.parameters(), lr=learning_rate)
+    criterion = nn.CrossEntropyLoss()
+    train_acc, test_acc, train_loss, test_loss = experiment_classifier(epochs_CLS, train_CLS_loader, test_CLS_loader, speech_classifier, loss_fn=criterion, optimizer=optimizer)
 
     # Plot the training accuracy
     plt.figure(figsize=(8, 6))

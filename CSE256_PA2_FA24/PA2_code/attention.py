@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import math
+import torch.nn.functional as F
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, d_model, num_heads=2):
@@ -48,7 +49,7 @@ class MultiHeadAttention(nn.Module):
         if mask is not None:
             scaled_scores = scaled_scores.mask_filled(mask == 0, float("-inf"))
 
-        scores = nn.Softmax(scaled_scores, dim=-1)
+        scores = F.softmax(scaled_scores, dim=-1)
         attention = scores @ v
 
         attention = attention.transpose(1, 2).contiguous()

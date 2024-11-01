@@ -1,17 +1,17 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from feed_forward import FeedForward
 
 
 class Classifier(nn.Module):
-    def __init__(self, d_model, d_hidden, d_out) -> None:
+    def __init__(self, d_model, d_hidden, d_out):
         super().__init__()
 
         self.ff = FeedForward(d_model=d_model, d_ff=d_hidden, d_out=d_out, activate_fn="relu")
 
     def forward(self, x):
         out = self.ff(x)
-        out = self.softmax(out)
         return out
     
 

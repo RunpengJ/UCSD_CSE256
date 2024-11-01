@@ -10,7 +10,7 @@ class FeedForward(nn.Module):
         self.linear2 = nn.Linear(d_ff, d_out)
 
         self.dropout = nn.Dropout(p=dropout)
-        self.activate = nn.GELU() if activate_fn == "gelu" else nn.ReLU
+        self.activate = nn.GELU() if activate_fn == "gelu" else nn.ReLU()
         self._initialization(activate_fn)
 
         self.d_model = d_model
