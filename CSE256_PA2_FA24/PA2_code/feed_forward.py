@@ -1,35 +1,29 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 class FeedForward(nn.Module):
 
-    def __init__(self, d_model, d_ff, d_out, activate_fn="relu", dropout=0.1):
+    def __init__(self, d_model, d_ff, d_out, activate_fn="gelu", dropout=0.1):
         super().__init__()
 
         self.linear1 = nn.Linear(d_model, d_ff)
         self.linear2 = nn.Linear(d_ff, d_out)
 
         self.dropout = nn.Dropout(p=dropout)
-
-        if activate_fn == "relu":
-            self.activate = F.relu()
-            self._initialization("kaiming")
-        else:
-            self.activate = F.gelu()
-            self._initialization()
+        self.activate = nn.GELU() if activate_fn == "gelu" else nn.ReLU
+        self._initialization(activate_fn)
 
         self.d_model = d_model
         self.d_ff = d_ff 
         self.d_out = d_out
 
-    def _initialization(self, initialize="xavier"):
-        if initialize == "kaiming":
-            nn.init.kaiming_normal_(self.linear1.weight)
-            nn.init.kaiming_normal_(self.linear2.weight)
-        else:
+    def _initialization(self, activate_fn):
+        if activate_fn == "gelu":
             nn.init.xavier_uniform_(self.linear1.weight)
             nn.init.xavier_uniform_(self.linear2.weight)
+        else:
+            nn.init.kaiming_normal_(self.linear1.weight)
+            nn.init.kaiming_normal_(self.linear2.weight)        
 
         nn.init.zeros_(self.linear1.bias)
         nn.init.zeros_(self.linear2.bias)
