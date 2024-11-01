@@ -161,14 +161,18 @@ def main():
 
     train_CLS_dataset = SpeechesClassificationDataset(tokenizer, "speechesdataset/train_CLS.tsv")
     train_CLS_loader = DataLoader(train_CLS_dataset, batch_size=batch_size,collate_fn=collate_batch,shuffle=True)
+    test_CLS_dataset = SpeechesClassificationDataset(tokenizer, "speechesdataset/test_CLS.tsv")
+    test_CLS_loader = DataLoader(train_CLS_dataset, batch_size=batch_size,collate_fn=collate_batch,shuffle=False)
 
-    encoder = TransformerEncoder()
+    vocab_size = len(train_CLS_dataset.tokenizer.itos)
+    encoder = TransformerEncoder(seq_lenth=block_size, vocab_size=vocab_size, d_model=n_embd, num_layers=n_layer, d_ff=4*n_embd, num_heads=n_head)
+    classifier = Classifier(d_model=n_embd, d_hidden=n_hidden, d_out=n_output)
+
+    speech_classifier = SpeechClassifier(encoder, classifier)
+    optimizer = torch.optim.adam(speech_classifier.parameters(), lr=learning_rate)
+    train_acc, test_acc, train_loss, test_loss = experiment_classifier(100, train_CLS_loader, test_CLS_loader, speech_classifier, )
+
   
-    # inputfile = "speechesdataset/train_LM.txt"
-    # with open(inputfile, 'r', encoding='utf-8') as f:
-    #     lmtrainText = f.read()
-    # train_LM_dataset = LanguageModelingDataset(tokenizer, lmtrainText,  block_size)
-    # train_LM_loader = DataLoader(train_LM_dataset, batch_size=batch_size, shuffle=True)
 
      # for the classification  task, you will train for a fixed number of epochs like this:
 
@@ -177,6 +181,12 @@ def main():
     #         xb, yb = xb.to(device), yb.to(device)
 
             # CLS training code here
+
+    # inputfile = "speechesdataset/train_LM.txt"
+    # with open(inputfile, 'r', encoding='utf-8') as f:
+    #     lmtrainText = f.read()
+    # train_LM_dataset = LanguageModelingDataset(tokenizer, lmtrainText,  block_size)
+    # train_LM_loader = DataLoader(train_LM_dataset, batch_size=batch_size, shuffle=True)
 
 
     # # for the language modeling task, you will iterate over the training data for a fixed number of iterations like this:
