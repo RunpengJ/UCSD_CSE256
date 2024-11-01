@@ -2,25 +2,26 @@
 import torch
 import torch.nn as nn
 
-from CSE256_PA2_FA24.PA2_code.attention import MultiHeadAttention
+from attention import MultiHeadAttention
 from feed_forward import FeedForward
 from embedding import InputEmbedding, PositionalEmbedding
 
 class TransformerBlock(nn.Module):
-    def __init__(self, d_model, d_ff=None, num_heads=2, dropout=0.1):
+    def __init__(self, d_model, d_ff, num_heads=2, dropout=0.1):
         super().__init__()
 
+        self.multi_head_attention = MultiHeadAttention(d_model, num_heads)
+        self.ff = FeedForward(d_model=d_model, d_ff=d_ff, d_out=d_model)
+
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.dropout1 = nn.Dropout(p=dropout)
+        self.dropout2 = nn.Dropout(p=dropout)
+
+        # Save parameters
         self.d_model = d_model
         self.d_ff = d_ff
         self.num_heads = num_heads
-
-        self.multi_head_attention = MultiHeadAttention(self.d_model, self.num_heads)
-        self.ff = FeedForward(self.d_model, d_ff=self.d_ff)
-
-        self.norm1 = nn.LayerNorm(self.d_model)
-        self.norm2 = nn.LayerNorm(self.d_model)
-        self.dropout1 = nn.Dropout(p=dropout)
-        self.dropout2 = nn.Dropout(p=dropout)
 
     def forward(self, query, key, value):
         attentions = self.multi_head_attention(query, key, value)
@@ -37,7 +38,7 @@ class TransformerBlock(nn.Module):
 
 
 class TransformerEncoder(nn.Module):
-    def __init__(self, seq_lenth, vocab_size, d_model, num_layers=4, d_ff=None, num_heads=2):
+    def __init__(self, seq_lenth, vocab_size, d_model, d_ff, num_layers=4, num_heads=2):
         super().__init__()
 
         self.input_embedding = InputEmbedding(vocab_size, d_model)

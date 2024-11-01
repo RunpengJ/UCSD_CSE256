@@ -17,7 +17,7 @@ class InputEmbedding(nn.Module):
         self._init_embeddings()
 
     def _init_embeddings(self):
-        nn.init.normal_(self.pos_embedding.weight, mean=0, std=0.2)
+        nn.init.normal_(self.token_embedding.weight, mean=0, std=0.2)
 
     def forward(self, x):
         out = self.token_embedding(x)

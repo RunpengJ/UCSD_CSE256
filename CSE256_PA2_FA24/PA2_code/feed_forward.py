@@ -4,23 +4,24 @@ import torch.nn.functional as F
 
 class FeedForward(nn.Module):
 
-    def __init__(self, d_model, d_ff, d_out, activate_fn=F.gelu(), dropout=0.1):
+    def __init__(self, d_model, d_ff, d_out, activate_fn="relu", dropout=0.1):
         super().__init__()
 
-        self.d_model = d_model
-        self.activate = activate_fn
-        self.d_ff = d_ff 
-        self.d_out = d_out
-
-        self.linear1 = nn.Linear(self.d_model, self.d_ff)
-        self.linear2 = nn.Linear(self.d_ff, self.d_out)
+        self.linear1 = nn.Linear(d_model, d_ff)
+        self.linear2 = nn.Linear(d_ff, d_out)
 
         self.dropout = nn.Dropout(p=dropout)
 
-        if self.activate == F.relu():
+        if activate_fn == "relu":
+            self.activate = F.relu()
             self._initialization("kaiming")
         else:
+            self.activate = F.gelu()
             self._initialization()
+
+        self.d_model = d_model
+        self.d_ff = d_ff 
+        self.d_out = d_out
 
     def _initialization(self, initialize="xavier"):
         if initialize == "kaiming":

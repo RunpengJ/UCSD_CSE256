@@ -166,7 +166,7 @@ def main():
     test_CLS_loader = DataLoader(test_CLS_dataset, batch_size=batch_size,collate_fn=collate_batch,shuffle=False)
 
     vocab_size = len(train_CLS_dataset.tokenizer.itos)
-    encoder = TransformerEncoder(seq_lenth=block_size, vocab_size=vocab_size, d_model=n_embd, num_layers=n_layer, d_ff=4*n_embd, num_heads=n_head)
+    encoder = TransformerEncoder(seq_lenth=block_size, vocab_size=vocab_size, d_model=n_embd, d_ff=4*n_embd, num_layers=n_layer, num_heads=n_head)
     classifier = Classifier(d_model=n_embd, d_hidden=n_hidden, d_out=n_output)
 
     speech_classifier = SpeechClassifier(encoder, classifier)
