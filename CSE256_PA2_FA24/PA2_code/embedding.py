@@ -8,20 +8,24 @@ class InputEmbedding(nn.Module):
 
     def __init__(self, vocab_size, d_model, dropout=0.1):
         super().__init__()
+
         self.token_embedding = nn.Embedding(vocab_size, d_model)
         self.dropout = nn.Dropout(p=dropout)
 
+        self._init_embeddings()
+
         self.vocab_size = vocab_size
         self.d_model = d_model
-
-        self._init_embeddings()
+        
 
     def _init_embeddings(self):
         nn.init.normal_(self.token_embedding.weight, mean=0, std=0.2)
 
+
     def forward(self, x):
         out = self.token_embedding(x)
         out = self.dropout(out)
+
         return out
 
 
@@ -37,11 +41,11 @@ class PositionalEmbedding(nn.Module):
         self.pos_embedding = nn.Embedding(max_seq_len, d_model)
         self.dropout = nn.Dropout(p=dropout)
 
-        self.d_model = d_model
-        self.max_seq_len = max_seq_len
-
         self._init_embeddings()
 
+        self.d_model = d_model
+        self.max_seq_len = max_seq_len
+        
 
     def _init_embeddings(self):
         nn.init.normal_(self.pos_embedding.weight, mean=0, std=0.2)
@@ -55,11 +59,9 @@ class PositionalEmbedding(nn.Module):
             raise ValueError(f"Sequence length {seq_length} exceeds maximum length {self.max_seq_len}")
         
         positions = torch.arange(seq_length, device=token_embeddings.device)
-
         pos_embeddings = self.pos_embedding(positions)
-
         out = token_embeddings + pos_embeddings.unsqueeze(0)
-
         out = self.dropout(out)
+
         return out
     

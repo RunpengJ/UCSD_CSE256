@@ -10,16 +10,21 @@ class Classifier(nn.Module):
 
         self.ff = FeedForward(d_model=d_model, d_ff=d_hidden, d_out=d_out, activate_fn="relu")
 
+
     def forward(self, x):
-        out = self.ff(x)
+        out = torch.mean(x, dim=1)
+        out = self.ff(out)
+
         return out
     
 
 class SpeechClassifier(nn.Module):
     def __init__(self, encoder, classifier):
         super().__init__()
+
         self.encoder = encoder
         self.classifier = classifier
+
 
     def forward(self, x):
         out = self.encoder(x)

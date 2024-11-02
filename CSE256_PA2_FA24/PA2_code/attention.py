@@ -7,18 +7,17 @@ class MultiHeadAttention(nn.Module):
     def __init__(self, d_model, num_heads=2):
         super().__init__()
 
-        self.d_model = d_model
-        self.num_heads = num_heads
-
-        self.head_dim = self.d_model // num_heads
-
-        self.query = nn.Linear(self.d_model, self.d_model, bias=False)
-        self.key = nn.Linear(self.d_model, self.d_model, bias=False)
-        self.value = nn.Linear(self.d_model, self.d_model, bias=False)
-
-        self.out = nn.Linear(self.d_model, self.d_model)
+        self.query = nn.Linear(d_model, d_model, bias=False)
+        self.key = nn.Linear(d_model, d_model, bias=False)
+        self.value = nn.Linear(d_model, d_model, bias=False)
+        self.out = nn.Linear(d_model, d_model)
 
         self._initialization()
+
+        self.d_model = d_model
+        self.num_heads = num_heads
+        self.head_dim = self.d_model // num_heads
+
 
     def _initialization(self):
         for p in self.parameters():
