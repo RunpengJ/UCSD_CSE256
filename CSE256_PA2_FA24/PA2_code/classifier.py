@@ -27,7 +27,7 @@ class SpeechClassifier(nn.Module):
 
 
     def forward(self, x):
-        out = self.encoder(x)
+        out, att_maps = self.encoder(x)
         out = self.classifier(out)
 
-        return out
+        return out, att_maps

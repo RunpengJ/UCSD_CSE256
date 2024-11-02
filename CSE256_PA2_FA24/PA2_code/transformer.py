@@ -24,7 +24,7 @@ class TransformerBlock(nn.Module):
 
     def forward(self, query, key, value):
         # Attention
-        attentions = self.multi_head_attention(query, key, value)
+        attentions, attention_weights = self.multi_head_attention(query, key, value)
         attentions_res1 = attentions + query
         attentions_norm1 = self.norm1(attentions_res1)
         attentions_drop1 = self.dropout1(attentions_norm1)
@@ -35,7 +35,7 @@ class TransformerBlock(nn.Module):
         attentions_norm2 = self.norm2(attentions_res2)
         attentions_drop2 = self.dropout2(attentions_norm2)
 
-        return attentions_drop2
+        return attentions_drop2, attention_weights
 
 
 class TransformerEncoder(nn.Module):
@@ -48,9 +48,11 @@ class TransformerEncoder(nn.Module):
 
 
     def forward(self, x):
+        att_maps = []
         out = self.input_embedding(x)
         out = self.pos_embedding(out)
         for layer in self.layers:
-            out = layer(out,out,out)
+            out, att_map = layer(out,out,out)
+            att_maps.append(att_map)
 
-        return out
+        return out, att_maps

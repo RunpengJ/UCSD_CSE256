@@ -46,15 +46,17 @@ class MultiHeadAttention(nn.Module):
         scaled_scores = torch.matmul(q, k_t) / math.sqrt(self.head_dim)
 
         if mask is not None:
-            scaled_scores = scaled_scores.mask_filled(mask == 0, float("-inf"))
+            scaled_scores = scaled_scores.masked_fill(mask == 0, float("-inf"))
 
-        scores = F.softmax(scaled_scores, dim=-1)
-        attention = scores @ v
+        attention_weights = F.softmax(scaled_scores, dim=-1)
+
+
+        attention = torch.matmul(attention_weights, v)
 
         attention = attention.transpose(1, 2).contiguous()
         concat = attention.view(batch_size, seq_length, self.d_model)   # batch_size x 
 
         out = self.out(concat)
 
-        return out
+        return out, attention_weights
         
