@@ -10,8 +10,9 @@ import argparse
 from tokenizer import SimpleTokenizer
 from dataset import SpeechesClassificationDataset, LanguageModelingDataset
 from transformer import Encoder, Decoder
-from classifier import Classifier,SpeechClassifier
+from classifier import Classifier, SpeechClassifier, experiment_classifier
 from utilities import Utilities
+from decoder_lm import LanguageModel, compute_perplexity
 
 
 seed = 42
@@ -67,98 +68,6 @@ def collate_batch(batch):
     return padded_sequences, labels
 
 
-def eval_classifier(data_loader, model, loss_fn):
-    """ Compute the accuracy of the classifier on the data in data_loader."""
-    model.eval()
-    total_correct = 0
-    total_samples = 0
-    total_train_loss = 0
-    with torch.no_grad():
-        for X, Y in data_loader:
-            X, Y = X.to(device), Y.to(device)
-
-            logits, _ = model(X)
-            loss = loss_fn(logits, Y)
-            _, predicted = torch.max(logits, 1)
-            
-            total_train_loss += loss.item()
-            total_correct += (predicted == Y).sum().item()
-            total_samples += Y.size(0)
-
-        accuracy = (100 * total_correct / total_samples)
-        train_loss = total_train_loss / total_samples
-        return accuracy, train_loss
-
-
-def train_classifier(data_loader, model, loss_fn, optimizer):
-    model.train()
-    total_correct = 0
-    total_samples = 0
-    total_train_loss = 0
-    for X, Y in data_loader:
-        X, Y = X.to(device), Y.to(device)
-
-        logits, _ = model(X)
-        loss = loss_fn(logits, Y)
-        _, predicted = torch.max(logits, 1)
-
-        total_train_loss += loss.item()
-        total_correct += (predicted == Y).sum().item()
-        total_samples += Y.size(0)
-
-        # Backpropagation
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-    accuracy = (100 * total_correct / total_samples)
-    train_loss = total_train_loss / total_samples
-    return accuracy, train_loss
-
-
-def experiment_classifier(n_epoch, train_loader, test_loader, model, loss_fn, optimizer):
-    all_train_accuracy = []
-    all_test_accuracy = []
-    all_train_loss = []
-    all_test_loss = []
-
-    model = model.to(device)
-
-    for epoch in range(n_epoch):
-        train_accuracy, train_loss = train_classifier(train_loader, model, loss_fn, optimizer)
-        all_train_accuracy.append(train_accuracy)
-        all_train_loss.append(train_loss)
-
-        test_accuracy, test_loss = eval_classifier(test_loader, model, loss_fn)
-        all_test_accuracy.append(test_accuracy)
-        all_test_loss.append(test_loss)
-
-        print(f'Epoch #{epoch + 1}: train accuracy {train_accuracy:.3f}, dev accuracy {test_accuracy:.3f}, train loss {train_loss:.3f}, dev loss {test_loss:.3f}')
-
-    return all_train_accuracy, all_test_accuracy, all_train_loss, all_test_loss
-
-
-def compute_perplexity(decoderLMmodel, data_loader, eval_iters=100):
-    """ Compute the perplexity of the decoderLMmodel on the data in data_loader.
-    Make sure to use the cross entropy loss for the decoderLMmodel.
-    """
-    decoderLMmodel.eval()
-    losses= []
-    for X, Y in data_loader:
-        X, Y = X.to(device), Y.to(device)
-        loss = decoderLMmodel(X, Y) # your model should be computing the cross entropy loss
-        losses.append(loss.item())
-        total_loss += loss.item()
-        if len(losses) >= eval_iters: break
-
-
-    losses = torch.tensor(losses)
-    mean_loss = losses.mean()
-    perplexity = torch.exp(mean_loss).item()  # Calculate perplexity as exp(mean loss)
-
-    decoderLMmodel.train()
-    return perplexity
-
 def plot_metrics(train_metric, test_metric, metric_name, model_name):
     """Helper function to plot and save training metrics"""
     plt.figure(figsize=(8, 6))
@@ -201,23 +110,20 @@ def main():
 
         # Create a classifier
         vocab_size = len(train_CLS_dataset.tokenizer.itos)
-        encoder = TransformerEncoder(seq_lenth=block_size, vocab_size=vocab_size, d_model=n_embd, d_ff=4*n_embd, num_layers=n_layer, num_heads=n_head)
+        encoder = Encoder(seq_lenth=block_size, vocab_size=vocab_size, d_model=n_embd, d_ff=4*n_embd, num_layers=n_layer, num_heads=n_head)
         classifier = Classifier(d_model=n_embd, d_hidden=n_hidden, d_out=n_output)
         speech_classifier = SpeechClassifier(encoder, classifier)
 
         # Sanity check
-        # encoder = encoder.to("cpu")
         ultil = Utilities(tokenizer, encoder)
         sentence = texts[0]
         ultil.sanity_check(sentence, block_size)
 
         # Run experiment
         print(f"Device: {device}")
-        
         optimizer = torch.optim.Adam(speech_classifier.parameters(), lr=learning_rate)
         criterion = nn.CrossEntropyLoss()
-        train_acc, test_acc, train_loss, test_loss = experiment_classifier(epochs_CLS, train_CLS_loader, test_CLS_loader, speech_classifier, loss_fn=criterion, optimizer=optimizer)
-
+        train_acc, test_acc, train_loss, test_loss = experiment_classifier(epochs_CLS, train_CLS_loader, test_CLS_loader, speech_classifier, loss_fn=criterion, optimizer=optimizer, device=device)
 
         # Plot the results
         plot_metrics(train_acc, test_acc, "Accuracy", "part1")
@@ -227,19 +133,19 @@ def main():
     elif args.model == "part2":
         print("Building part2 ...")
 
-        # inputfile = "speechesdataset/train_LM.txt"
-        # with open(inputfile, 'r', encoding='utf-8') as f:
-        #     lmtrainText = f.read()
-        # train_LM_dataset = LanguageModelingDataset(tokenizer, lmtrainText,  block_size)
-        # train_LM_loader = DataLoader(train_LM_dataset, batch_size=batch_size, shuffle=True)
+        inputfile = "speechesdataset/train_LM.txt"
+        with open(inputfile, 'r', encoding='utf-8') as f:
+            lmtrainText = f.read()
+        train_LM_dataset = LanguageModelingDataset(tokenizer, lmtrainText,  block_size)
+        train_LM_loader = DataLoader(train_LM_dataset, batch_size=batch_size, shuffle=True)
 
 
-        # # for the language modeling task, you will iterate over the training data for a fixed number of iterations like this:
-        # for i, (xb, yb) in enumerate(train_LM_loader):
-        #     if i >= max_iters:
-        #         break
-        #     xb, yb = xb.to(device), yb.to(device)
-        #     # LM training code here
+        # for the language modeling task, you will iterate over the training data for a fixed number of iterations like this:
+        for i, (xb, yb) in enumerate(train_LM_loader):
+            if i >= max_iters:
+                break
+            xb, yb = xb.to(device), yb.to(device)
+            # LM training code here
 
     elif args.model == "part3":
         print("Building part3 ...")
