@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-class InputEmbedding(nn.Module):
+class WordEmbedding(nn.Module):
     """
     Creat word embeddings. Convert each word in the input sequence to an embedding vector.
     """
@@ -13,9 +13,6 @@ class InputEmbedding(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
         self._init_embeddings()
-
-        self.vocab_size = vocab_size
-        self.d_model = d_model
         
 
     def _init_embeddings(self):

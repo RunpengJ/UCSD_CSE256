@@ -9,7 +9,7 @@ import argparse
 
 from tokenizer import SimpleTokenizer
 from dataset import SpeechesClassificationDataset, LanguageModelingDataset
-from transformer import TransformerEncoder
+from transformer import Encoder, Decoder
 from classifier import Classifier,SpeechClassifier
 from utilities import Utilities
 

@@ -4,7 +4,7 @@ import math
 import torch.nn.functional as F
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, d_model, num_heads=2):
+    def __init__(self, d_model, num_heads):
         super().__init__()
 
         self.query = nn.Linear(d_model, d_model, bias=False)
@@ -38,9 +38,9 @@ class MultiHeadAttention(nn.Module):
         key = key.view(batch_size, seq_length, self.num_heads, self.head_dim)
         value = value.view(batch_size, seq_length, self.num_heads, self.head_dim)
 
-        q = query.transpose(1,2)    # batch_size x num_heads x seq_lenth x head_dim
-        k = key.transpose(1,2) 
-        v = value.transpose(1,2)    
+        q = query.transpose(1,2)    # batch_size, num_heads, seq_lenth, head_dim
+        k = key.transpose(1,2)      # batch_size, num_heads, seq_lenth, head_dim
+        v = value.transpose(1,2)    # batch_size, num_heads, seq_lenth, head_dim
 
         k_t = k.transpose(-1, -2)    # batch_size x num_heads x head_dim x seq_lenth
         scaled_scores = torch.matmul(q, k_t) / math.sqrt(self.head_dim)
