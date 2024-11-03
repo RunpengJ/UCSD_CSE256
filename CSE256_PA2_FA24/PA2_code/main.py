@@ -12,7 +12,7 @@ from dataset import SpeechesClassificationDataset, LanguageModelingDataset
 from transformer import Encoder, Decoder
 from classifier import Classifier, SpeechClassifier, experiment_classifier
 from utilities import Utilities
-from decoder_lm import LanguageModel, compute_perplexity
+from decoder_lm import LanguageModel, experiment_LM, compute_perplexity
 
 
 seed = 42
@@ -115,9 +115,9 @@ def main():
         speech_classifier = SpeechClassifier(encoder, classifier)
 
         # Sanity check
-        ultil = Utilities(tokenizer, encoder)
+        util = Utilities(tokenizer, encoder)
         sentence = texts[0]
-        ultil.sanity_check(sentence, block_size)
+        util.sanity_check(sentence, block_size)
 
         # Run experiment
         print(f"Device: {device}")
@@ -139,13 +139,48 @@ def main():
         train_LM_dataset = LanguageModelingDataset(tokenizer, lmtrainText,  block_size)
         train_LM_loader = DataLoader(train_LM_dataset, batch_size=batch_size, shuffle=True)
 
+        test_files = ['test_LM_obama.txt', 'test_LM_wbush.txt', 'test_LM_ghbush.txt']
+        test_loaders = {}
+        
+        for test_file in test_files:
+            with open(f"speechesdataset/{test_file}", 'r', encoding='utf-8') as f:
+                test_text = f.read()
+            test_dataset = LanguageModelingDataset(tokenizer, test_text, block_size)
+            test_loaders[test_file] = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-        # for the language modeling task, you will iterate over the training data for a fixed number of iterations like this:
-        for i, (xb, yb) in enumerate(train_LM_loader):
-            if i >= max_iters:
-                break
-            xb, yb = xb.to(device), yb.to(device)
-            # LM training code here
+        decoder_LM = LanguageModel(
+            vocab_size=vocab_size, 
+            seq_length=block_size, 
+            d_model=n_embd, 
+            d_ff=n_hidden, 
+            num_layers=n_layer, 
+            num_heads=n_head
+            ).to(device)
+        
+        # Sanity check
+        util = Utilities(tokenizer, decoder_LM)
+        util.sanity_check(lmtrainText, block_size)
+
+        # train decoder
+        train_losses, test_perplexities = experiment_LM(
+            decoder_LM, 
+            train_LM_loader, 
+            test_loaders['test_LM_obama.txt'], 
+            device, 
+            max_iters, 
+            eval_interval, 
+            eval_iters, 
+            learning_rate
+            )
+
+        # Evaluate on all test sets
+        print("\nFinal Evaluation:")
+        for test_name, test_loader in test_loaders.items():
+            perplexity = compute_perplexity(decoder_LM, test_loader, eval_iters=eval_iters, device=device)
+            print(f"{test_name}: Perplexity = {perplexity:.2f}")
+        
+        # Plot training progress
+        plot_metrics(train_losses, test_perplexities, "Perplexity", "part2")
 
     elif args.model == "part3":
         print("Building part3 ...")
