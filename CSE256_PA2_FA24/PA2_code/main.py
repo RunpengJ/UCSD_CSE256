@@ -139,7 +139,7 @@ def main():
         train_LM_loader = DataLoader(train_LM_dataset, batch_size=batch_size, shuffle=True)
 
         # Load testing dataset
-        test_files = ['test_LM_obama.txt', 'test_LM_wbush.txt', 'test_LM_hbush.txt']
+        test_files = ['test_LM_obama.txt', 'test_LM_hbush.txt', 'test_LM_wbush.txt']
         test_loaders = {}
         for test_file in test_files:
             with open(f"speechesdataset/{test_file}", 'r', encoding='utf-8') as f:

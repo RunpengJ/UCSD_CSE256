@@ -66,7 +66,6 @@ def experiment_LM(model, train_loader, test_loader, device, max_iters, eval_inte
             break
 
         xb, yb = xb.to(device), yb.to(device)
-
         
         loss = model(xb, yb)
 
@@ -79,9 +78,10 @@ def experiment_LM(model, train_loader, test_loader, device, max_iters, eval_inte
 
         # Evaluation
         if iter_num % eval_interval == 0:
+            train_perplexity = compute_perplexity(model, train_loader, eval_iters=eval_iters, device=device)
             perplexity = compute_perplexity(model, test_loader, eval_iters=eval_iters, device=device)
             test_perplexities.append(perplexity)
-            print(f"Iteration {iter_num}: Train Loss = {loss.item():.4f}, Test Perplexity = {perplexity:.2f}")
+            print(f"Iteration {iter_num}: Train Loss = {loss.item():.4f}, Train Perplexity = {train_perplexity:.2f}, Test Perplexity = {perplexity:.2f}")
 
         iter_count += 1
 
