@@ -8,6 +8,13 @@ class LanguageModel(nn.Module):
     def __init__(self, vocab_size, seq_length, d_model, d_ff, num_layers=4, num_heads=2):
         super().__init__()
         self.decoder = Decoder(seq_lenth=seq_length, vocab_size=vocab_size, d_model=d_model, d_ff=d_ff, num_layers=num_layers, num_heads=num_heads)
+
+        self.vocab_size = vocab_size
+        self.seq_length = seq_length
+        self.d_model = d_model
+        self.d_ff = d_ff
+        self.num_layers = num_layers
+        self.num_heads = num_heads
         
     def forward(self, x, targets=None):
         logits, attn_maps = self.decoder(x)
