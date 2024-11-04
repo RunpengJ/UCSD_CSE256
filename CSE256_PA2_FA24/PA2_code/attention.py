@@ -12,17 +12,9 @@ class MultiHeadAttention(nn.Module):
         self.value = nn.Linear(d_model, d_model, bias=False)
         self.out = nn.Linear(d_model, d_model)
 
-        self._initialization()
-
         self.d_model = d_model
         self.num_heads = num_heads
         self.head_dim = self.d_model // num_heads
-
-
-    def _initialization(self):
-        for p in self.parameters():
-            if p.dim() > 1:
-                nn.init.xavier_uniform_(p)
 
 
     def forward(self, query, key, value, mask=None):
