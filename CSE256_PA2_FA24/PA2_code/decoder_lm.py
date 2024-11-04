@@ -2,19 +2,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from transformer import Decoder
 
 class LanguageModel(nn.Module):
-    def __init__(self, vocab_size, seq_length, d_model, d_ff, num_layers=4, num_heads=2):
+    def __init__(self, decoder):
         super().__init__()
-        self.decoder = Decoder(seq_lenth=seq_length, vocab_size=vocab_size, d_model=d_model, d_ff=d_ff, num_layers=num_layers, num_heads=num_heads)
-
-        self.vocab_size = vocab_size
-        self.seq_length = seq_length
-        self.d_model = d_model
-        self.d_ff = d_ff
-        self.num_layers = num_layers
-        self.num_heads = num_heads
+        self.decoder = decoder
         
     def forward(self, x, targets=None):
         logits, attn_maps = self.decoder(x)
@@ -26,7 +18,6 @@ class LanguageModel(nn.Module):
             logits.view(-1, logits.size(-1)),
             targets.view(-1)
         )
-        
         return loss
 
     
@@ -71,7 +62,7 @@ def experiment_LM(model, train_loader, test_loader, device, max_iters, eval_inte
 
         optimizer.zero_grad()
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.1)
+        # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.1)
         optimizer.step()
 
         train_losses.append(loss.item())
