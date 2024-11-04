@@ -34,16 +34,13 @@ class MultiHeadAttention(nn.Module):
         key = self.key(key)
         value = self.value(value)
 
-        query = query.view(batch_size, seq_length_query, self.num_heads, self.head_dim)
-        key = key.view(batch_size, seq_length, self.num_heads, self.head_dim)
-        value = value.view(batch_size, seq_length, self.num_heads, self.head_dim)
+        # batch_size, num_heads, seq_lenth, head_dim
+        query = query.view(batch_size, seq_length_query, self.num_heads, self.head_dim).transpose(1,2)
+        key = key.view(batch_size, seq_length, self.num_heads, self.head_dim).transpose(1,2)
+        value = value.view(batch_size, seq_length, self.num_heads, self.head_dim).transpose(1,2)
 
-        q = query.transpose(1,2)    # batch_size, num_heads, seq_lenth, head_dim
-        k = key.transpose(1,2)      # batch_size, num_heads, seq_lenth, head_dim
-        v = value.transpose(1,2)    # batch_size, num_heads, seq_lenth, head_dim
-
-        k_t = k.transpose(-1, -2)    # batch_size x num_heads x head_dim x seq_lenth
-        scaled_scores = torch.matmul(q, k_t) / math.sqrt(self.head_dim)
+        k_t = key.transpose(-1, -2)    # batch_size, num_heads, head_dim, seq_lenth
+        scaled_scores = torch.matmul(query, k_t) / math.sqrt(self.head_dim)     # batch_size, num_heads, seq_lenth, seq_lenth
 
         if mask is not None:
             scaled_scores = scaled_scores.masked_fill(mask == 0, float("-inf"))
@@ -51,10 +48,10 @@ class MultiHeadAttention(nn.Module):
         attention_weights = F.softmax(scaled_scores, dim=-1)
 
 
-        attention = torch.matmul(attention_weights, v)
+        attention = torch.matmul(attention_weights, value)
 
         attention = attention.transpose(1, 2).contiguous()
-        concat = attention.view(batch_size, seq_length, self.d_model)   # batch_size x 
+        concat = attention.view(batch_size, seq_length, self.d_model) 
 
         out = self.out(concat)
 

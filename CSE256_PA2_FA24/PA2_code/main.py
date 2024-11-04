@@ -131,23 +131,25 @@ def main():
 
 
     elif args.model == "part2":
-        print("Building part2 ...")
-
+        # Load training dataset
         inputfile = "speechesdataset/train_LM.txt"
         with open(inputfile, 'r', encoding='utf-8') as f:
             lmtrainText = f.read()
         train_LM_dataset = LanguageModelingDataset(tokenizer, lmtrainText,  block_size)
         train_LM_loader = DataLoader(train_LM_dataset, batch_size=batch_size, shuffle=True)
 
-        test_files = ['test_LM_obama.txt', 'test_LM_wbush.txt', 'test_LM_ghbush.txt']
+        # Load testing dataset
+        test_files = ['test_LM_obama.txt', 'test_LM_wbush.txt', 'test_LM_hbush.txt']
         test_loaders = {}
-        
         for test_file in test_files:
             with open(f"speechesdataset/{test_file}", 'r', encoding='utf-8') as f:
                 test_text = f.read()
             test_dataset = LanguageModelingDataset(tokenizer, test_text, block_size)
             test_loaders[test_file] = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
+        # Create model
+        vocab_size = len(train_LM_dataset.tokenizer.itos)
+        
         decoder_LM = LanguageModel(
             vocab_size=vocab_size, 
             seq_length=block_size, 
@@ -155,13 +157,14 @@ def main():
             d_ff=n_hidden, 
             num_layers=n_layer, 
             num_heads=n_head
-            ).to(device)
+            )
         
         # Sanity check
         util = Utilities(tokenizer, decoder_LM)
         util.sanity_check(lmtrainText, block_size)
 
         # train decoder
+        print(f"Device: {device}")
         train_losses, test_perplexities = experiment_LM(
             decoder_LM, 
             train_LM_loader, 
@@ -170,7 +173,7 @@ def main():
             max_iters, 
             eval_interval, 
             eval_iters, 
-            learning_rate
+            1e-3
             )
 
         # Evaluate on all test sets
