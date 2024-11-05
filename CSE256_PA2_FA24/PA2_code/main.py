@@ -9,7 +9,7 @@ import argparse
 
 from tokenizer import SimpleTokenizer
 from dataset import SpeechesClassificationDataset, LanguageModelingDataset
-from transformer import Encoder, Decoder, DecoderPart3
+from transformer import Encoder, Decoder, DecoderPart3, DecoderPart3Local
 from classifier import Classifier, SpeechClassifier, experiment_classifier
 from utilities import Utilities
 from decoder_lm import LanguageModel, experiment_LM, compute_perplexity
@@ -109,8 +109,8 @@ def main():
         test_CLS_loader = DataLoader(test_CLS_dataset, batch_size=batch_size,collate_fn=collate_batch,shuffle=False)
 
         # Create a classifier
-        vocab_size = len(train_CLS_dataset.tokenizer.itos)
-        encoder = Encoder(seq_lenth=block_size, vocab_size=vocab_size, d_model=n_embd, d_ff=4*n_embd, num_layers=n_layer, num_heads=n_head)
+        vocab_size = tokenizer.vocab_size
+        encoder = Encoder(seq_lenth=block_size, vocab_size=vocab_size, d_model=n_embd, d_ff=n_hidden, num_layers=n_layer, num_heads=n_head)
         classifier = Classifier(d_model=n_embd, d_hidden=n_hidden, d_out=n_output)
         speech_classifier = SpeechClassifier(encoder, classifier)
 
@@ -197,7 +197,8 @@ def main():
 
         # Create model
         vocab_size = len(train_LM_dataset.tokenizer.itos)
-        decoder = DecoderPart3(vocab_size=vocab_size, n_embed=n_embd, n_head=n_head, n_layer=n_layer, block_size=block_size)
+        # decoder = DecoderPart3(vocab_size=vocab_size, n_embed=n_embd, n_head=n_head, n_layer=n_layer, block_size=block_size)
+        decoder = DecoderPart3Local(vocab_size=vocab_size, n_embed=n_embd, n_head=n_head, n_layer=n_layer, block_size=block_size)
         decoder_LM = LanguageModel(decoder)
         
         # Sanity check

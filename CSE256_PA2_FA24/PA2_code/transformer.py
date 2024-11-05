@@ -112,9 +112,9 @@ class Decoder(nn.Module):
 
 """ Part 3 starts here """
 class DecoderBlockPart3(nn.Module):
-    def __init__(self, n_embed, n_head):
+    def __init__(self, n_embed, n_head, part3="alibi"):
         super().__init__()
-        self.attn = MultiHeadLocalAttention(n_embed, n_head)
+        self.attn = MultiHeadAttentionALiBi(n_embed, n_head) if part3=="alibi" else MultiHeadLocalAttention(n_embed, n_head)
         self.ff = FeedForward(n_embed, 100, n_embed)
         self.ln1 = nn.LayerNorm(n_embed)
         self.ln2 = nn.LayerNorm(n_embed)
@@ -161,6 +161,53 @@ class DecoderPart3(nn.Module):
             mask = mask.to(x.device)
 
         out = self.token_embedding(x)
+
+        attn_maps = []
+        for layer in self.blocks:
+            out, attn_map = layer(out, mask=mask)
+            attn_maps.append(attn_map)
+
+        out = self.ln_f(out)
+        logits = self.lm_head(out)
+
+        return logits, attn_maps
+    
+
+class DecoderPart3Local(nn.Module):
+    def __init__(self, vocab_size, n_embed, n_head, n_layer, block_size):
+        super().__init__()
+        self.block_size = block_size
+        
+        self.token_embedding = WordEmbedding(vocab_size=vocab_size, d_model=n_embed)
+        self.pos_embedding = PositionalEmbedding(block_size, n_embed)
+        
+        self.blocks = nn.ModuleList([
+            DecoderBlockPart3(n_embed, n_head, "not alibi") for _ in range(n_layer)
+        ])
+        
+        self.ln_f = nn.LayerNorm(n_embed)
+        self.lm_head = nn.Linear(n_embed, vocab_size)
+        
+        # Initialize weights
+        self.apply(self._init_weights)
+    
+    def _init_weights(self, module):
+        if isinstance(module, (nn.Linear, nn.Embedding)):
+            module.weight.data.normal_(mean=0.0, std=0.02)
+            if isinstance(module, nn.Linear) and module.bias is not None:
+                module.bias.data.zero_()
+        elif isinstance(module, nn.LayerNorm):
+            module.bias.data.zero_()
+            module.weight.data.fill_(1.0)
+
+    def forward(self, x, mask=None):
+        if mask is None:
+            seq_length = x.size(1)
+            mask = ~torch.triu(torch.ones(seq_length, seq_length), diagonal=1).bool()
+            mask = mask.to(x.device)
+
+        out = self.token_embedding(x)
+        out = self.pos_embedding(out)
 
         attn_maps = []
         for layer in self.blocks:
