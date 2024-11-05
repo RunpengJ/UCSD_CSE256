@@ -8,5 +8,12 @@ The directory "PA2_code/speechesdataset" contains the data to be used for this a
 
 ```bash
 # In CSE256_PA2_FA24/PA2_code/
-% python main.py --model <model> # change model to part1, part2, part3 as needed
+% python main.py --model part1 
+
+% python main.py --model part2
+
+# This command runs the local window multihead attention by default, 
+# uncomment main.py, line 200 for the ALiBi encoding.
+% python main.py --model part3  
+
 ```
