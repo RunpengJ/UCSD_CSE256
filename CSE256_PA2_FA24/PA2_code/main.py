@@ -6,7 +6,6 @@ import os
 import matplotlib.pyplot as plt
 import argparse
 
-
 from tokenizer import SimpleTokenizer
 from dataset import SpeechesClassificationDataset, LanguageModelingDataset
 from transformer import Encoder, Decoder, DecoderPart3, DecoderPart3Local
@@ -156,7 +155,7 @@ def main():
         util = Utilities(tokenizer, decoder_LM)
         util.sanity_check(lmtrainText, block_size)
 
-        # train decoder
+        # Train decoder
         print(f"Device: {device}")
         train_losses, test_perplexities = experiment_LM(
             decoder_LM, 
@@ -205,7 +204,7 @@ def main():
         util = Utilities(tokenizer, decoder_LM)
         util.sanity_check(lmtrainText, block_size)
 
-        # train decoder
+        # Train decoder
         print(f"Device: {device}")
         train_losses, test_perplexities = experiment_LM(
             decoder_LM, 

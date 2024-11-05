@@ -82,7 +82,6 @@ class MultiHeadAttentionALiBi(nn.Module):
         alibi_bias = self.slopes * distance
         scores = scores + alibi_bias
         
-        # Apply mask if provided
         if mask is not None:
             scores = scores.masked_fill(mask == 0, float('-inf'))
         

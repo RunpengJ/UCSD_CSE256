@@ -34,7 +34,6 @@ class SpeechClassifier(nn.Module):
     
 
 def eval_classifier(data_loader, model, loss_fn, device):
-    """ Compute the accuracy of the classifier on the data in data_loader."""
     model.eval()
     total_correct = 0
     total_samples = 0
